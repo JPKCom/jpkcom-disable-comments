@@ -3,15 +3,15 @@
 Plugin Name: JPKCom Disable Comments
 Plugin URI: https://github.com/JPKCom/jpkcom-disable-comments
 Description: Globally disable comments functionality.
-Version: 1.0.0
+Version: 1.0.1
 Author: Jean Pierre Kolb <jpk@jpkc.com>
 Author URI: https://www.jpkc.com
 Contributors: JPKCom
 Tags: Comments, Plugin
-Requires at least: 6.7
+Requires at least: 6.8
 Tested up to: 6.8
 Requires PHP: 8.3
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPL-2.0+
 License URI: http://www.gnu.org/licenses/gpl-2.0.txt
 GitHub Plugin URI: JPKCom/jpkcom-disable-comments
@@ -51,3 +51,19 @@ add_action( 'admin_menu', function (): void {
 add_action( 'admin_bar_menu', function ( WP_Admin_Bar $wp_admin_bar ): void {
     $wp_admin_bar->remove_node( 'comments' );
 }, 999 );
+
+add_filter( 'rest_endpoints', function ( array $endpoints ): array {
+
+    if ( isset( $endpoints['/wp/v2/comments'] ) ) {
+        unset( $endpoints['/wp/v2/comments'] );
+    }
+
+    foreach ( $endpoints as $route => $details ) {
+        if ( str_starts_with( haystack: $route, needle: '/wp/v2/comments/' ) ) {
+            unset( $endpoints[ $route ] );
+        }
+    }
+
+    return $endpoints;
+} );
+
