@@ -8,7 +8,6 @@
 **Author URI:** https://www.jpkc.com  
 **Contributors:** JPKCom  
 **Tags:** Comments, Plugin  
-**Requires Plugins:** livecanvas  
 **Requires at least:** 6.8  
 **Tested up to:** 6.8  
 **Requires PHP:** 8.3  
