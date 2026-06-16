@@ -3,17 +3,17 @@
 **Plugin Name:** JPKCom Disable Comments  
 **Plugin URI:** https://github.com/JPKCom/jpkcom-disable-comments  
 **Description:** Globally disable comments functionality.  
-**Version:** 1.0.1  
+**Version:** 1.0.2  
 **Author:** Jean Pierre Kolb <jpk@jpkc.com>  
 **Author URI:** https://www.jpkc.com  
 **Contributors:** JPKCom  
 **Tags:** Comments, Plugin  
-**Requires at least:** 6.8  
-**Tested up to:** 6.8  
+**Requires at least:** 6.9  
+**Tested up to:** 7.0  
 **Requires PHP:** 8.3  
-**Stable tag:** 1.0.1  
-**License:** GPL-2.0+  
-**License URI:** http://www.gnu.org/licenses/gpl-2.0.txt
+**Stable tag:** 1.0.2  
+**License:** GPL-2.0-or-later  
+**License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
 Globally disable comments functionality.
 
@@ -31,6 +31,12 @@ Disables the WordPress core functionality for comments for the whole site.
 
 
 ## Changelog
+
+### 1.0.2
+* Added secure self-hosted plugin updates via GitHub with SHA256 checksum verification
+* Added an automated release workflow (builds the ZIP, generates the manifest and deploys to gh-pages on tag push)
+* Raised the minimum WordPress version to 6.9 and "Tested up to" to WordPress 7.0
+* Switched license metadata to the SPDX identifier `GPL-2.0-or-later` with the HTTPS license URI
 
 ### 1.0.1
 * Removed REST API endpoint for comments

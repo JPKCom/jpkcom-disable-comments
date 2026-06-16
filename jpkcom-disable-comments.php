@@ -3,24 +3,52 @@
 Plugin Name: JPKCom Disable Comments
 Plugin URI: https://github.com/JPKCom/jpkcom-disable-comments
 Description: Globally disable comments functionality.
-Version: 1.0.1
+Version: 1.0.2
 Author: Jean Pierre Kolb <jpk@jpkc.com>
 Author URI: https://www.jpkc.com
 Contributors: JPKCom
 Tags: Comments, Plugin
-Requires at least: 6.8
-Tested up to: 6.8
+Requires at least: 6.9
+Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 1.0.1
-License: GPL-2.0+
-License URI: http://www.gnu.org/licenses/gpl-2.0.txt
-GitHub Plugin URI: JPKCom/jpkcom-disable-comments
-Primary Branch: main
+Stable tag: 1.0.2
+License: GPL-2.0-or-later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 */
 
 if ( ! defined( constant_name: 'WPINC' ) ) {
   die;
 }
+
+
+/**
+ * Plugin Constants
+ */
+if ( ! defined( 'JPKCOM_DISABLE_COMMENTS_VERSION' ) ) {
+    define( 'JPKCOM_DISABLE_COMMENTS_VERSION', '1.0.2' );
+}
+
+
+/**
+ * Initialize Plugin Updater
+ *
+ * Loads and initializes the GitHub-based plugin updater with SHA256 checksum verification.
+ */
+add_action( 'init', static function (): void {
+    $updater_file = plugin_dir_path( __FILE__ ) . 'includes/class-plugin-updater.php';
+
+    if ( file_exists( $updater_file ) ) {
+        require_once $updater_file;
+
+        if ( class_exists( 'JPKComDisableCommentsGitUpdate\\JPKComGitPluginUpdater' ) ) {
+            new \JPKComDisableCommentsGitUpdate\JPKComGitPluginUpdater(
+                plugin_file: __FILE__,
+                current_version: JPKCOM_DISABLE_COMMENTS_VERSION,
+                manifest_url: 'https://jpkcom.github.io/jpkcom-disable-comments/plugin_jpkcom-disable-comments.json'
+            );
+        }
+    }
+}, 5 );
 
 add_action( 'admin_init', function (): void {
     global $pagenow;
