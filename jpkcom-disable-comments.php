@@ -16,6 +16,8 @@ License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 */
 
+declare(strict_types=1);
+
 if ( ! defined( constant_name: 'WPINC' ) ) {
   die;
 }
@@ -127,7 +129,7 @@ add_filter( 'rest_endpoints', function ( array $endpoints ): array {
         unset( $endpoints['/wp/v2/comments'] );
     }
 
-    foreach ( $endpoints as $route => $details ) {
+    foreach ( array_keys( $endpoints ) as $route ) {
         if ( str_starts_with( haystack: $route, needle: '/wp/v2/comments/' ) ) {
             unset( $endpoints[ $route ] );
         }
