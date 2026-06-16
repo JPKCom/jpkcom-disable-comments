@@ -1,0 +1,45 @@
+{
+  "name": "JPKCom Disable Comments",
+  "display_name": "JPKCom Disable Comments",
+  "slug": "jpkcom-disable-comments",
+  "version": "1.0.2",
+  "download_url": "https://github.com/JPKCom/jpkcom-disable-comments/releases/download/v1.0.2/jpkcom-disable-comments.zip",
+  "checksum_sha256": "51ac1cc9ee9ad8ed11cc365e38b956a4c2414b62d09aa6736f309f91ed74a315",
+  "requires": "6.9",
+  "tested": "7.0",
+  "requires_php": "8.3",
+  "author": "Jean Pierre Kolb <jpk@jpkc.com>",
+  "author_profile": "https://www.jpkc.com",
+  "contributors": {
+    "JPKCom": {
+      "profile": "https://profiles.wordpress.org/JPKCom",
+      "avatar": "https://wordpress.org/grav-redirect.php?user=JPKCom&s=36"
+    }
+  },
+  "tags": [
+    "Comments",
+    "Plugin"
+  ],
+  "license": "GPL-2.0-or-later",
+  "license_uri": "https://www.gnu.org/licenses/gpl-2.0.html",
+  "text_domain": "",
+  "domain_path": "/languages",
+  "network": true,
+  "requires_plugins": [],
+  "homepage": "https://github.com/JPKCom/jpkcom-disable-comments",
+  "last_updated": "2026-06-16",
+  "sections": {
+    "description": "<p>Disables the WordPress core functionality for comments for the whole\nsite.</p>\n",
+    "installation": "<ol type=\"1\">\n<li>In your admin panel, go to ‘Plugins’ &gt; and click the ‘Add New’\nbutton.</li>\n<li>Click Upload Plugin and ‘Choose File’, then select the Plugin’s .zip\nfile. Click ‘Install Now’.</li>\n<li>Click ‘Activate’ to use the plugin right away.</li>\n</ol>\n",
+    "changelog": "<h3 id=\"section\">1.0.2</h3>\n<ul>\n<li>Added secure self-hosted plugin updates via GitHub with SHA256\nchecksum verification</li>\n<li>Added an automated release workflow (builds the ZIP, generates the\nmanifest and deploys to gh-pages on tag push)</li>\n<li>Raised the minimum WordPress version to 6.9 and “Tested up to” to\nWordPress 7.0</li>\n<li>Switched license metadata to the SPDX identifier\n<code>GPL-2.0-or-later</code> with the HTTPS license URI</li>\n<li>Added PHPDoc-generated API documentation, built and deployed to\ngh-pages on release</li>\n<li>Hardening: enabled <code>declare(strict_types=1)</code> and tidied\nthe REST endpoint loop</li>\n</ul>\n<h3 id=\"section-1\">1.0.1</h3>\n<ul>\n<li>Removed REST API endpoint for comments</li>\n</ul>\n<h3 id=\"section-2\">1.0.0</h3>\n<ul>\n<li>Initial Release</li>\n</ul>\n",
+    "faq": "\n"
+  },
+  "readme_html": "<h1 id=\"jpkcom-disable-comments\">JPKCom Disable Comments</h1>\n<p><strong>Plugin Name:</strong> JPKCom Disable Comments<br />\n<strong>Plugin URI:</strong>\nhttps://github.com/JPKCom/jpkcom-disable-comments<br />\n<strong>Description:</strong> Globally disable comments\nfunctionality.<br />\n<strong>Version:</strong> 1.0.2<br />\n<strong>Author:</strong> Jean Pierre Kolb <a href=\"mailto:jpk@jpkc.com\"\nclass=\"email\">jpk@jpkc.com</a><br />\n<strong>Author URI:</strong> https://www.jpkc.com<br />\n<strong>Contributors:</strong> JPKCom<br />\n<strong>Tags:</strong> Comments, Plugin<br />\n<strong>Requires at least:</strong> 6.9<br />\n<strong>Tested up to:</strong> 7.0<br />\n<strong>Requires PHP:</strong> 8.3<br />\n<strong>Stable tag:</strong> 1.0.2<br />\n<strong>License:</strong> GPL-2.0-or-later<br />\n<strong>License URI:</strong>\nhttps://www.gnu.org/licenses/gpl-2.0.html</p>\n<p>Globally disable comments functionality.</p>\n<h2 id=\"description\">Description</h2>\n<p>Disables the WordPress core functionality for comments for the whole\nsite.</p>\n<h2 id=\"installation\">Installation</h2>\n<ol type=\"1\">\n<li>In your admin panel, go to ‘Plugins’ &gt; and click the ‘Add New’\nbutton.</li>\n<li>Click Upload Plugin and ‘Choose File’, then select the Plugin’s .zip\nfile. Click ‘Install Now’.</li>\n<li>Click ‘Activate’ to use the plugin right away.</li>\n</ol>\n<h2 id=\"changelog\">Changelog</h2>\n<h3 id=\"section\">1.0.2</h3>\n<ul>\n<li>Added secure self-hosted plugin updates via GitHub with SHA256\nchecksum verification</li>\n<li>Added an automated release workflow (builds the ZIP, generates the\nmanifest and deploys to gh-pages on tag push)</li>\n<li>Raised the minimum WordPress version to 6.9 and “Tested up to” to\nWordPress 7.0</li>\n<li>Switched license metadata to the SPDX identifier\n<code>GPL-2.0-or-later</code> with the HTTPS license URI</li>\n<li>Added PHPDoc-generated API documentation, built and deployed to\ngh-pages on release</li>\n<li>Hardening: enabled <code>declare(strict_types=1)</code> and tidied\nthe REST endpoint loop</li>\n</ul>\n<h3 id=\"section-1\">1.0.1</h3>\n<ul>\n<li>Removed REST API endpoint for comments</li>\n</ul>\n<h3 id=\"section-2\">1.0.0</h3>\n<ul>\n<li>Initial Release</li>\n</ul>\n",
+  "banners": {
+    "low": "https://jpkcom.github.io/jpkcom-disable-comments/assets/banner-772x250.avif",
+    "high": "https://jpkcom.github.io/jpkcom-disable-comments/assets/banner-1544x500.avif"
+  },
+  "icons": {
+    "default": "https://s.w.org/plugins/geopattern-icon/jpkcom-disable-comments.svg"
+  }
+}
