@@ -23,6 +23,8 @@ if ( ! defined( constant_name: 'WPINC' ) ) {
 
 /**
  * Plugin Constants
+ *
+ * @since 1.0.2
  */
 if ( ! defined( 'JPKCOM_DISABLE_COMMENTS_VERSION' ) ) {
     define( 'JPKCOM_DISABLE_COMMENTS_VERSION', '1.0.2' );
@@ -33,6 +35,10 @@ if ( ! defined( 'JPKCOM_DISABLE_COMMENTS_VERSION' ) ) {
  * Initialize Plugin Updater
  *
  * Loads and initializes the GitHub-based plugin updater with SHA256 checksum verification.
+ *
+ * @since 1.0.2
+ *
+ * @return void
  */
 add_action( 'init', static function (): void {
     $updater_file = plugin_dir_path( __FILE__ ) . 'includes/class-plugin-updater.php';
@@ -50,6 +56,13 @@ add_action( 'init', static function (): void {
     }
 }, 5 );
 
+/**
+ * Remove comment support from post types and redirect the comments screen.
+ *
+ * @since 1.0.0
+ *
+ * @return void
+ */
 add_action( 'admin_init', function (): void {
     global $pagenow;
 
@@ -68,18 +81,46 @@ add_action( 'admin_init', function (): void {
     }
 } );
 
+/**
+ * Force comments and pings closed and return an empty comments array.
+ *
+ * @since 1.0.0
+ */
 add_filter( 'comments_open', '__return_false', 20, 2 );
 add_filter( 'pings_open', '__return_false', 20, 2 );
 add_filter( 'comments_array', '__return_empty_array', 10, 2 );
 
+/**
+ * Remove the Comments entry from the admin menu.
+ *
+ * @since 1.0.0
+ *
+ * @return void
+ */
 add_action( 'admin_menu', function (): void {
     remove_menu_page( 'edit-comments.php' );
 } );
 
+/**
+ * Remove the Comments node from the admin bar.
+ *
+ * @since 1.0.0
+ *
+ * @param WP_Admin_Bar $wp_admin_bar The admin bar instance.
+ * @return void
+ */
 add_action( 'admin_bar_menu', function ( WP_Admin_Bar $wp_admin_bar ): void {
     $wp_admin_bar->remove_node( 'comments' );
 }, 999 );
 
+/**
+ * Remove the REST API comment endpoints.
+ *
+ * @since 1.0.0
+ *
+ * @param array $endpoints The registered REST API endpoints.
+ * @return array The endpoints without comment routes.
+ */
 add_filter( 'rest_endpoints', function ( array $endpoints ): array {
 
     if ( isset( $endpoints['/wp/v2/comments'] ) ) {

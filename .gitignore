@@ -57,3 +57,8 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 /wp
 /wp/
 /wp/*
+
+# phpDocumentor
+.phpdoc/
+docs/
+phpDocumentor.phar

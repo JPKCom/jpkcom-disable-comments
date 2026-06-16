@@ -29,19 +29,27 @@ jobs:
           echo "ZIP_FILE=$(basename $GITHUB_REPOSITORY).zip" >> $GITHUB_ENV
           echo "DOWNLOAD_URL=https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF##*/}/$(basename $GITHUB_REPOSITORY).zip" >> $GITHUB_ENV
 
-      # 3. Setup Python
+      # 3. Setup PHP
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+          coverage: none
+
+      # 4. Setup Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
-      # 4. Install Pandoc
-      - name: Install Pandoc
+      # 5. Install Pandoc and GraphViz
+      - name: Install Pandoc and GraphViz
         run: |
           sudo apt-get update
-          sudo apt-get install -y pandoc jq
+          sudo apt-get install -y pandoc jq graphviz
 
-      # 5. Extract metadata and generate HTML
+      # 6. Extract metadata and generate HTML
       - name: Extract metadata and generate HTML
         run: |
           mkdir -p gh-pages-html gh-pages-json gh-pages-deploy
@@ -91,7 +99,7 @@ jobs:
           # Copy README.md to gh-pages for reference
           cp README.md gh-pages-deploy/
 
-      # 6. Create plugin ZIP
+      # 7. Create plugin ZIP
       - name: Create plugin ZIP
         run: |
           STAGING_DIR="${{ env.PLUGIN_SLUG }}"
@@ -100,7 +108,7 @@ jobs:
           zip -r "${{ env.ZIP_FILE }}" "$STAGING_DIR"
           rm -rf "$STAGING_DIR"
 
-      # 6.1. Generate SHA256 checksum for security verification
+      # 7.1. Generate SHA256 checksum for security verification
       - name: Generate SHA256 checksum
         run: |
           SHA256_HASH=$(sha256sum "${{ env.ZIP_FILE }}" | awk '{print $1}')
@@ -109,7 +117,7 @@ jobs:
           # Create checksum file for reference
           echo "$SHA256_HASH  ${{ env.ZIP_FILE }}" > ${{ env.ZIP_FILE }}.sha256
 
-      # 7. Upload ZIP and checksum to GitHub release
+      # 8. Upload ZIP and checksum to GitHub release
       - name: Upload ZIP and checksum to GitHub release
         uses: softprops/action-gh-release@v2
         with:
@@ -121,7 +129,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 8. Generate JSON manifest dynamically
+      # 9. Generate JSON manifest dynamically
       - name: Generate plugin manifest JSON
         shell: python
         run: |
@@ -198,17 +206,28 @@ jobs:
           with open(f"gh-pages-json/plugin_{os.environ.get('PLUGIN_SLUG')}.json", "w", encoding="utf-8") as f:
               json.dump(plugin, f, indent=2, ensure_ascii=False)
 
-      # 9. Prepare for deployment
+      # 10. Generate PHPDoc documentation
+      - name: Generate PHPDoc API documentation
+        run: |
+          wget https://phpdoc.org/phpDocumentor.phar -O phpDocumentor.phar
+          chmod +x phpDocumentor.phar
+          ./phpDocumentor.phar run --config=phpdoc.xml
+          echo "PHPDoc documentation generated in docs/"
+
+      # 11. Prepare for deployment
       - name: Prepare gh-pages deployment
         run: |
           mkdir -p gh-pages-deploy
           cp -r gh-pages-json/* gh-pages-deploy/
           cp -r gh-pages-html/* gh-pages-deploy/
+          if [ -d "docs" ]; then
+            cp -r docs gh-pages-deploy/
+          fi
           if [ -d "assets" ]; then
             cp -r assets gh-pages-deploy/
           fi
 
-      # 10. Deploy to GitHub Pages
+      # 12. Deploy to GitHub Pages
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
