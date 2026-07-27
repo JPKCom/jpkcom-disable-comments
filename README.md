@@ -3,7 +3,7 @@
 **Plugin Name:** JPKCom Disable Comments  
 **Plugin URI:** https://github.com/JPKCom/jpkcom-disable-comments  
 **Description:** Globally disable comments functionality.  
-**Version:** 1.0.3  
+**Version:** 1.0.4  
 **Author:** Jean Pierre Kolb <jpk@jpkc.com>  
 **Author URI:** https://www.jpkc.com  
 **Contributors:** JPKCom  
@@ -11,7 +11,7 @@
 **Requires at least:** 6.9  
 **Tested up to:** 7.0  
 **Requires PHP:** 8.3  
-**Stable tag:** 1.0.3  
+**Stable tag:** 1.0.4  
 **License:** GPL-2.0-or-later  
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -37,6 +37,16 @@ Disables the WordPress core functionality for comments for the whole site.
 
 
 ## Changelog
+
+### 1.0.4
+* Security: update packages are now verified *before* installation — the verified file is handed to WordPress instead of being downloaded a second time, so the bytes that were checked are the bytes that get installed
+* Security: a missing or unfetchable SHA-256 checksum now aborts the update instead of installing unverified code (previously it silently skipped verification)
+* Security: pinned every GitHub Action to a full commit SHA and added Dependabot with a 7-day cooldown, so a moved tag can no longer change the release build
+* Security: tightened which download the updater claims, so sibling plugins cannot match each other's package
+* Fixed: `sprintf()` calls in the updater bound named arguments to a variadic parameter, which raises `ArgumentCountError` on PHP 8.3
+* Fixed: the "View Details" modal could fail with a `TypeError` when the manifest omitted `requires_plugins`
+* Performance: a failed manifest fetch is now cached for an hour instead of being retried on every admin request
+* Added: CI workflow on every pull request (PHP lint, named-argument check, YAML validation, action-pinning guard)
 
 ### 1.0.3
 * Docs: linked the published PHPDoc API documentation
