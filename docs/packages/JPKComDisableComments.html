@@ -120,7 +120,7 @@
             <dt class="phpdocumentor-table-of-contents__entry -constant -public">
     <a class="" href="namespaces/default.html#constant_JPKCOM_DISABLE_COMMENTS_VERSION">JPKCOM_DISABLE_COMMENTS_VERSION</a>
     <span>
-        &nbsp;: mixed&nbsp;= &#039;1.0.8&#039;                            </span>
+        &nbsp;: mixed&nbsp;= &#039;1.0.9&#039;                            </span>
 </dt>
 
     </dl>
@@ -128,6 +128,20 @@
 
 
 
+<h4 id="toc-functions">
+    Functions
+    <a href="packages/JPKComDisableComments.html#toc-functions" class="headerlink"><i class="fas fa-link"></i></a>
+
+</h4>
+<dl class="phpdocumentor-table-of-contents">
+            <dt class="phpdocumentor-table-of-contents__entry -function -">
+    <a class="" href="namespaces/default.html#function_jpkcom_disable_comments_close_rest_status">jpkcom_disable_comments_close_rest_status()</a>
+    <span>
+                                &nbsp;: mixed    </span>
+</dt>
+<dd>Report comments and pings as closed in a REST post response.</dd>
+
+    </dl>
 
         
     <section class="phpdocumentor-constants">
@@ -156,7 +170,7 @@
     <span class="phpdocumentor-signature__visibility">public</span>
         <span class="phpdocumentor-signature__type">mixed</span>
     <span class="phpdocumentor-signature__name">JPKCOM_DISABLE_COMMENTS_VERSION</span>
-    = <span class="phpdocumentor-signature__default-value">&#039;1.0.8&#039;</span>
+    = <span class="phpdocumentor-signature__default-value">&#039;1.0.9&#039;</span>
 </code>
 
 
@@ -168,7 +182,87 @@
     </article>
             </section>
 
-        
+            <section class="phpdocumentor-functions">
+        <h3 class="phpdocumentor-elements__header" id="functions">
+            Functions
+            <a href="packages/JPKComDisableComments.html#functions" class="headerlink"><i class="fas fa-link"></i></a>
+
+        </h3>
+                    <article class="phpdocumentor-element -function - ">
+    <h4 class="phpdocumentor-element__name" id="function_jpkcom_disable_comments_close_rest_status">
+        jpkcom_disable_comments_close_rest_status()
+        <a href="namespaces/default.html#function_jpkcom_disable_comments_close_rest_status" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="jpkcom-disable-comments.php"><a href="files/jpkcom-disable-comments.html">jpkcom-disable-comments.php</a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">85</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Report comments and pings as closed in a REST post response.</p>
+
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility"></span>
+                    <span class="phpdocumentor-signature__name">jpkcom_disable_comments_close_rest_status</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__type">mixed&nbsp;</span><span class="phpdocumentor-signature__argument__name">$response</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">mixed</span></code>
+
+        <section class="phpdocumentor-description"><p>Removing post type support is not enough for <code class="prettyprint">post</code>, <code class="prettyprint">page</code> and
+<code class="prettyprint">attachment</code>: <code class="prettyprint">WP_REST_Posts_Controller::get_item_schema()</code> carries a
+hardcoded <code class="prettyprint">$fixed_schemas</code> list for those three in which <code class="prettyprint">comments</code> is
+always present - the <code class="prettyprint">post_type_supports()</code> check applies only to other
+post types. The schema therefore keeps <code class="prettyprint">comment_status</code> and <code class="prettyprint">ping_status</code>,
+and the response kept reporting the stored value, typically <code class="prettyprint">open</code>, on a
+site that refuses comments.</p>
+<p>The fields are rewritten rather than removed, so the block editor and any
+other consumer keep the response shape they expect.</p>
+<p>A REST write can still store <code class="prettyprint">comment_status: open</code> - the schema stays
+writable - but the value is inert: <code class="prettyprint">comments_open</code> is filtered to false,
+and this filter reports the field as closed regardless.</p>
+</section>
+
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$response</span>
+                : <span class="phpdocumentor-argument-list__argument__type">mixed</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>Prepared response, a WP_REST_Response in practice.</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="function_jpkcom_disable_comments_close_rest_status_tags">
+        Tags
+        <a href="namespaces/default.html#function_jpkcom_disable_comments_close_rest_status_tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                    <dt class="phpdocumentor-tag-list__entry">
+                <span class="phpdocumentor-tag__name">since</span>
+            </dt>
+                            <dd class="phpdocumentor-tag-list__definition">
+                                            <span class="phpdocumentor-tag-link">1.0.9</span>
+                                                                                                        
+                                    </dd>
+                        </dl>
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">mixed</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>The response with both status fields set to closed.</p>
+</section>
+
+            </section>
+
+</article>
+            </section>
+
         
     </article>
                                 </section>
@@ -182,7 +276,8 @@
             <li>
                 <ul class="phpdocumentor-list -clean">
                                                                                                                                                                     <li><a href="packages/JPKComDisableComments.html#toc-constants">Constants</a></li>
-                                                        </ul>
+                                                                <li><a href="packages/JPKComDisableComments.html#toc-functions">Functions</a></li>
+                                    </ul>
             </li>
 
                             <li class="phpdocumentor-on-this-page-section__title">Constants</li>
@@ -192,6 +287,12 @@
                                             </ul>
                 </li>
             
+                            <li class="phpdocumentor-on-this-page-section__title">Functions</li>
+                <li>
+                    <ul class="phpdocumentor-list -clean">
+                                                    <li class=""><a href="namespaces/default.html#function_jpkcom_disable_comments_close_rest_status">jpkcom_disable_comments_close_rest_status()</a></li>
+                                            </ul>
+                </li>
                     </ul>
     </section>
 

@@ -1,4 +1,48 @@
-<h3 id="section">1.0.8</h3>
+<h3 id="section">1.0.9</h3>
+<ul>
+<li>Fixed: existing comments were still publicly readable through the
+comment feeds. <code>/comments/feed/</code> and
+<code>&lt;post&gt;/feed/</code> are built by <code>WP_Query</code>
+directly via <code>$wpdb</code> and bypass the
+<code>comments_array</code> filter this plugin relied on, so approved
+comments stayed retrievable after comments had been switched off. Both
+now return 404 and the feed discovery links are gone; the regular post
+feed at <code>/feed/</code> is unaffected</li>
+<li>Fixed: the dashboard kept showing comments.
+<code>remove_meta_box( 'dashboard_recent_comments', … )</code> had no
+effect for two reasons — no widget of that name has existed since
+WordPress 3.8 (recent comments live inside the Activity widget), and
+<code>admin_init</code> runs before <code>wp_dashboard_setup()</code>
+anyway. “At a Glance” therefore still linked a comment count to the
+redirected comments screen, and the Activity widget still rendered the
+full moderation list. Replaced by zeroing
+<code>wp_count_comments()</code> and short-circuiting
+<code>comments_pre_query</code></li>
+<li>Fixed: comment and trackback support is now removed on
+<code>wp_loaded</code> instead of <code>admin_init</code>, so it applies
+to REST and front-end requests too, not just wp-admin. The two supports
+are also checked independently — a post type declaring
+<code>trackbacks</code> without <code>comments</code> previously kept
+them</li>
+<li>Fixed: REST responses reported the stored
+<code>comment_status</code>, typically <code>open</code>, on a site that
+refuses comments. Removing post type support cannot change this for
+<code>post</code>, <code>page</code> and <code>attachment</code>:
+<code>WP_REST_Posts_Controller::get_item_schema()</code> carries a
+hardcoded <code>$fixed_schemas</code> list in which
+<code>comments</code> is always present. <code>comment_status</code> and
+<code>ping_status</code> are now reported as <code>closed</code>. The
+stored value is left alone, and the fields keep their place in the
+response so the block editor sees the shape it expects</li>
+<li>Changed: <code>comments_open</code>, <code>pings_open</code> and
+<code>comments_array</code> are filtered at <code>PHP_INT_MAX</code>
+instead of priority 20/10, so a theme or plugin hooking in later cannot
+re-open them</li>
+<li>Added: <code>tests/test-hooks.php</code> covers the hook surface and
+the new callbacks; CI runs it on every pull request and push to
+<code>main</code></li>
+</ul>
+<h3 id="section-1">1.0.8</h3>
 <ul>
 <li>Fixed: the update manifest no longer reports
 <code>network: true</code> for this plugin. The generator defaulted a
@@ -14,7 +58,7 @@ repository are now English throughout, and the developer notes in
 <code>CLAUDE.md</code> were translated and trimmed. No effect on the
 shipped plugin</li>
 </ul>
-<h3 id="section-1">1.0.7</h3>
+<h3 id="section-2">1.0.7</h3>
 <ul>
 <li>Changed: <code>Tested up to</code> raised to WordPress 7.1</li>
 <li>Changed: the bundled updater’s runtime floor now matches the
@@ -26,7 +70,7 @@ and <code>tested</code> now say 6.9 and 7.1. They only apply when the
 README metadata cannot be read, but a stale fallback would have
 published a minimum the plugin no longer supports</li>
 </ul>
-<h3 id="section-2">1.0.6</h3>
+<h3 id="section-3">1.0.6</h3>
 <ul>
 <li>Added: plugin banners (<code>assets/banner-1544x500.avif</code>,
 <code>assets/banner-772x250.avif</code>) — a plain <code>#3c4955</code>
@@ -34,7 +78,7 @@ surface with no lettering. The update manifest already advertised these
 two URLs, but nothing was published under them, so the plugin card in
 wp-admin had a broken banner</li>
 </ul>
-<h3 id="section-3">1.0.5</h3>
+<h3 id="section-4">1.0.5</h3>
 <ul>
 <li>CI: the release step no longer copies the staging directory into
 itself, so the ZIP has no empty
@@ -48,7 +92,7 @@ to full commit SHAs</li>
 <li>CI: security and regression tests now run on every pull request,
 where a plugin has them</li>
 </ul>
-<h3 id="section-4">1.0.4</h3>
+<h3 id="section-5">1.0.4</h3>
 <ul>
 <li>Security: update packages are now verified <em>before</em>
 installation — the verified file is handed to WordPress instead of being
@@ -73,11 +117,11 @@ instead of being retried on every admin request</li>
 <li>Added: CI workflow on every pull request (PHP lint, named-argument
 check, YAML validation, action-pinning guard)</li>
 </ul>
-<h3 id="section-5">1.0.3</h3>
+<h3 id="section-6">1.0.3</h3>
 <ul>
 <li>Docs: linked the published PHPDoc API documentation</li>
 </ul>
-<h3 id="section-6">1.0.2</h3>
+<h3 id="section-7">1.0.2</h3>
 <ul>
 <li>Added secure self-hosted plugin updates via GitHub with SHA256
 checksum verification</li>
@@ -92,11 +136,11 @@ gh-pages on release</li>
 <li>Hardening: enabled <code>declare(strict_types=1)</code> and tidied
 the REST endpoint loop</li>
 </ul>
-<h3 id="section-7">1.0.1</h3>
+<h3 id="section-8">1.0.1</h3>
 <ul>
 <li>Removed REST API endpoint for comments</li>
 </ul>
-<h3 id="section-8">1.0.0</h3>
+<h3 id="section-9">1.0.0</h3>
 <ul>
 <li>Initial Release</li>
 </ul>

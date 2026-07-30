@@ -76,6 +76,11 @@ Search.appendIndex(
             "summary": "",
             "url": "namespaces/default.html#constant_JPKCOM_DISABLE_COMMENTS_VERSION"
         },                {
+            "fqsen": "\\jpkcom_disable_comments_close_rest_status\u0028\u0029",
+            "name": "jpkcom_disable_comments_close_rest_status",
+            "summary": "Report\u0020comments\u0020and\u0020pings\u0020as\u0020closed\u0020in\u0020a\u0020REST\u0020post\u0020response.",
+            "url": "namespaces/default.html#function_jpkcom_disable_comments_close_rest_status"
+        },                {
             "fqsen": "\\",
             "name": "\\",
             "summary": "",

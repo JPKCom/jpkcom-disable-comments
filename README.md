@@ -3,7 +3,7 @@
 **Plugin Name:** JPKCom Disable Comments  
 **Plugin URI:** https://github.com/JPKCom/jpkcom-disable-comments  
 **Description:** Globally disable comments functionality.  
-**Version:** 1.0.8  
+**Version:** 1.0.9  
 **Author:** Jean Pierre Kolb <jpk@jpkc.com>  
 **Author URI:** https://www.jpkc.com  
 **Contributors:** JPKCom  
@@ -11,7 +11,7 @@
 **Requires at least:** 6.9  
 **Tested up to:** 7.1  
 **Requires PHP:** 8.3  
-**Stable tag:** 1.0.8  
+**Stable tag:** 1.0.9  
 **License:** GPL-2.0-or-later  
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,6 +21,10 @@ Globally disable comments functionality.
 ## Description
 
 Disables the WordPress core functionality for comments for the whole site.
+
+Comment and trackback support is removed from every post type, comments and pings are forced closed, and the Comments screen, admin menu entry and admin-bar node are gone. Beyond that, the plugin closes the routes through which comments otherwise remain visible or reachable: the dashboard shows no comment count and no moderation list, the comment feeds (`/comments/feed/` and `<post>/feed/`) return 404 instead of serving stored comments, the REST comment endpoints are removed, and REST post responses report `comment_status` and `ping_status` as `closed`.
+
+Existing comments are not deleted — they stay in the database, out of reach of the front end, the feeds and the REST API. Deactivating the plugin makes them visible again.
 
 
 ### Documentation
@@ -37,6 +41,14 @@ Disables the WordPress core functionality for comments for the whole site.
 
 
 ## Changelog
+
+### 1.0.9
+* Fixed: existing comments were still publicly readable through the comment feeds. `/comments/feed/` and `<post>/feed/` are built by `WP_Query` directly via `$wpdb` and bypass the `comments_array` filter this plugin relied on, so approved comments stayed retrievable after comments had been switched off. Both now return 404 and the feed discovery links are gone; the regular post feed at `/feed/` is unaffected
+* Fixed: the dashboard kept showing comments. `remove_meta_box( 'dashboard_recent_comments', … )` had no effect for two reasons — no widget of that name has existed since WordPress 3.8 (recent comments live inside the Activity widget), and `admin_init` runs before `wp_dashboard_setup()` anyway. "At a Glance" therefore still linked a comment count to the redirected comments screen, and the Activity widget still rendered the full moderation list. Replaced by zeroing `wp_count_comments()` and short-circuiting `comments_pre_query`
+* Fixed: comment and trackback support is now removed on `wp_loaded` instead of `admin_init`, so it applies to REST and front-end requests too, not just wp-admin. The two supports are also checked independently — a post type declaring `trackbacks` without `comments` previously kept them
+* Fixed: REST responses reported the stored `comment_status`, typically `open`, on a site that refuses comments. Removing post type support cannot change this for `post`, `page` and `attachment`: `WP_REST_Posts_Controller::get_item_schema()` carries a hardcoded `$fixed_schemas` list in which `comments` is always present. `comment_status` and `ping_status` are now reported as `closed`. The stored value is left alone, and the fields keep their place in the response so the block editor sees the shape it expects
+* Changed: `comments_open`, `pings_open` and `comments_array` are filtered at `PHP_INT_MAX` instead of priority 20/10, so a theme or plugin hooking in later cannot re-open them
+* Added: `tests/test-hooks.php` covers the hook surface and the new callbacks; CI runs it on every pull request and push to `main`
 
 ### 1.0.8
 * Fixed: the update manifest no longer reports `network: true` for this plugin. The generator defaulted a missing `Network:` header to true, while WordPress' own default for a missing header is "not network-only". Metadata only — WordPress derives network-only from the plugin header via `is_network_only_plugin()`, not from the update manifest

@@ -1,5 +1,18 @@
 <p>Disables the WordPress core functionality for comments for the whole
 site.</p>
+<p>Comment and trackback support is removed from every post type,
+comments and pings are forced closed, and the Comments screen, admin
+menu entry and admin-bar node are gone. Beyond that, the plugin closes
+the routes through which comments otherwise remain visible or reachable:
+the dashboard shows no comment count and no moderation list, the comment
+feeds (<code>/comments/feed/</code> and <code>&lt;post&gt;/feed/</code>)
+return 404 instead of serving stored comments, the REST comment
+endpoints are removed, and REST post responses report
+<code>comment_status</code> and <code>ping_status</code> as
+<code>closed</code>.</p>
+<p>Existing comments are not deleted — they stay in the database, out of
+reach of the front end, the feeds and the REST API. Deactivating the
+plugin makes them visible again.</p>
 <h3 id="documentation">Documentation</h3>
 <p><strong>API Documentation:</strong> Complete PHPDoc-generated API
 documentation is available at: <a
