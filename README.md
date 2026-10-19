@@ -3,7 +3,7 @@
 **Plugin Name:** JPKCom Disable Comments  
 **Plugin URI:** https://github.com/JPKCom/jpkcom-disable-comments  
 **Description:** Globally disable comments functionality.  
-**Version:** 1.0.9  
+**Version:** 1.0.10  
 **Author:** Jean Pierre Kolb <jpk@jpkc.com>  
 **Author URI:** https://www.jpkc.com  
 **Contributors:** JPKCom  
@@ -11,9 +11,10 @@
 **Requires at least:** 6.9  
 **Tested up to:** 7.1  
 **Requires PHP:** 8.3  
-**Stable tag:** 1.0.9  
+**Stable tag:** 1.0.10  
 **License:** GPL-2.0-or-later  
-**License URI:** https://www.gnu.org/licenses/gpl-2.0.html
+**License URI:** https://www.gnu.org/licenses/gpl-2.0.html  
+**Update URI:** https://github.com/JPKCom/jpkcom-disable-comments
 
 Globally disable comments functionality.
 
@@ -41,6 +42,11 @@ Existing comments are not deleted — they stay in the database, out of reach of
 
 
 ## Changelog
+
+### 1.0.10
+* Security: the plugin header now carries `Update URI: https://github.com/JPKCom/jpkcom-disable-comments`. Without it, WordPress also asks wordpress.org for updates under this plugin's slug, so a same-named plugin published there with a higher version would be offered as an update of this one. With the header, wordpress.org answers nothing for this plugin and updates come only from this repository
+* Changed: the updater keeps its manifest cache, its failure marker and its fetch lock in site transients. On multisite the network now fetches the manifest once instead of once per site; on a single site nothing changes. The old per-site entries expire on their own within a day
+* Changed: the release workflow downloads phpDocumentor from a fixed GitHub release and verifies its SHA-256 before running it, instead of executing whatever phpdoc.org serves that day. No effect on the shipped plugin
 
 ### 1.0.9
 * Fixed: existing comments were still publicly readable through the comment feeds. `/comments/feed/` and `<post>/feed/` are built by `WP_Query` directly via `$wpdb` and bypass the `comments_array` filter this plugin relied on, so approved comments stayed retrievable after comments had been switched off. Both now return 404 and the feed discovery links are gone; the regular post feed at `/feed/` is unaffected
