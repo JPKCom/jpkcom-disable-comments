@@ -67,7 +67,7 @@ A **note request** is the collection route with `type` exactly `note` (GET and P
 
 ## Core details this plugin exists around
 
-The first four were measured against a running WordPress 7.0.2 for 1.0.9. The other three were read in the WordPress 7.1.3 source for 1.0.11 and have not yet been measured on a running site. The wrong assumption is noted so it is not reintroduced.
+The first four were measured against a running WordPress 7.0.2 for 1.0.9. The other three (Notes through the gate, the 404 bytes, the feed counts) were read in the WordPress 7.1.3 source and then measured on a running WordPress 7.1.3 for 1.0.11 (2026-10-20): on the test site harden-trim.ddev.site, block-editor Notes over REST as admin and as an editor (create 201, list `?post=<id>&type=note&status=all&context=edit` 200, reply 201, get 200, resolve/update, delete) and in the block editor itself (headless Chromium: note added through the Notes UI, still listed after reload); anonymous note access refused by core (401); every non-note request on `/wp/v2/comments*` answered with a 404 byte-identical to core's missing-route answer; `/feed/` and Atom without `<comments>`, `<wfw:commentRss>`, `<slash:comments>`, `rel=replies`, `<thr:total>`; `get_comments_number()` 0 while the stored `comment_count` is 1; `debug.log` empty. The note-route `id` override was attacked anonymously after the fix (`?id=<regular comment>` via the pretty route and `?rest_route=`, JSON body `id`, form body `id`): all 404 with 1.0.11, while the same requests without any gate returned the regular comment with 200. The wrong assumption is noted so it is not reintroduced.
 
 **`comments_array` does not cover the feeds.** Comment feeds are assembled by `WP_Query` straight through `$wpdb` (`class-wp-query.php`, the `is_comment_feed` branches around lines 2815 and 3475) and only expose the `comment_feed_*` filters. Up to 1.0.8 `/comments/feed/` and `<post>/feed/` therefore kept serving approved comments — 200 with the comment text in the body — while the theme showed none. The feeds are now 404'd outright; `/feed/` is untouched because `is_comment_feed()` is false there.
 
@@ -155,7 +155,7 @@ php tests/test-hooks.php    # exit 0 = green
 php tests/test-claims.php   # the figures above still hold
 ```
 
-The plugin is a pure set of hook registrations, so the suite covers the registration surface and the callback logic. What it cannot cover — that WordPress calls these hooks where expected — was verified by hand against a WordPress 7.0.2 instance for 1.0.9. The 1.0.11 changes have **not yet been verified on a running site**: Notes being created, listed and resolved through the gate, the exact bytes of the 404, and `/feed/` without `<comments>` and `<slash:comments>`. So far they rest only on this suite and on reading the 7.1.3 source. Once it has been measured, replace these sentences with what was measured.
+The plugin is a pure set of hook registrations, so the suite covers the registration surface and the callback logic. What it cannot cover — that WordPress calls these hooks where expected — was verified by hand against a WordPress 7.0.2 instance for 1.0.9. The 1.0.11 changes were verified on a running WordPress 7.1.3: see "Core details this plugin exists around" for what was measured.
 
 ---
 
