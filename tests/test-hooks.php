@@ -13,7 +13,8 @@
  *
  * @package JPKCom_Disable_Comments
  * @since 1.0.9
- * @since 1.0.11 Notes gate, note-query pass-through, comment counts.
+ * @since 1.0.11 Notes gate (including an `id` parameter that overrides the route ID),
+ *               note-query pass-through, comment counts.
  */
 
 declare(strict_types=1);
@@ -116,10 +117,30 @@ if ( ! class_exists( class: 'WP_REST_Response' ) ) {
 }
 
 if ( ! class_exists( class: 'WP_REST_Request' ) ) {
-    /** Minimal request: method, route and the merged request parameters. */
+    /**
+     * Minimal request: method, route and the parameters by source.
+     *
+     * get_param() follows core's precedence (7.1.3 class-wp-rest-request.php
+     * get_parameter_order(), get_param()): JSON body (when it is JSON), then the
+     * form body for POST, PUT, PATCH and DELETE only, then the query string,
+     * then the URL parameters; a null value counts as absent (core's isset()).
+     * On rest_pre_dispatch the URL parameters are still empty.
+     */
     class WP_REST_Request {
-        /** @param array<string,mixed> $params */
-        public function __construct( private string $method = 'GET', private string $route = '', private array $params = array() ) {
+        /**
+         * @param array<string,mixed> $params Query-string (GET) parameters.
+         * @param array<string,mixed> $json   JSON body parameters.
+         * @param array<string,mixed> $body   Form body (POST) parameters.
+         * @param array<string,mixed> $url    URL parameters from route matching.
+         */
+        public function __construct(
+            private string $method = 'GET',
+            private string $route = '',
+            private array $params = array(),
+            private array $json = array(),
+            private array $body = array(),
+            private array $url = array()
+        ) {
         }
 
         public function get_method(): string {
@@ -131,7 +152,22 @@ if ( ! class_exists( class: 'WP_REST_Request' ) ) {
         }
 
         public function get_param( string $key ): mixed {
-            return $this->params[ $key ] ?? null;
+            $order = array( $this->json );
+
+            if ( in_array( $this->method, array( 'POST', 'PUT', 'PATCH', 'DELETE' ), true ) ) {
+                $order[] = $this->body;
+            }
+
+            $order[] = $this->params;
+            $order[] = $this->url;
+
+            foreach ( $order as $source ) {
+                if ( isset( $source[ $key ] ) ) {
+                    return $source[ $key ];
+                }
+            }
+
+            return null;
         }
     }
 }
@@ -613,6 +649,48 @@ if ( $gate !== array() ) {
     jpkcom_check( 'upper-case collection with type=note passes', $dispatch( 'GET', '/WP/V2/COMMENTS', array( 'type' => 'note' ) ) === null );
     jpkcom_check( 'upper-case note item passes', $dispatch( 'GET', '/WP/V2/COMMENTS/13' ) === null );
     jpkcom_check( 'note item with leading zeros passes', $dispatch( 'GET', '/wp/v2/comments/013' ) === null );
+
+    /*
+     * The comments controller does not use the ID in the route: it reads
+     * $request['id'] (7.1.3 class-wp-rest-comments-controller.php:435, :480,
+     * :873, :918, :1042, :1066), and get_param() prefers the JSON body, the form
+     * body and the query string to the URL parameters. A note's route with an
+     * `id` parameter naming a regular comment would load and return - or update,
+     * or delete - that comment. The gate must refuse it.
+     */
+    $request = static fn ( string $method, string $route, array $params = array(), array $json = array(), array $body = array() ): WP_REST_Request
+        => new WP_REST_Request( $method, $route, $params, $json, $body );
+
+    foreach (
+        array(
+            'note item, query id of a regular comment'       => $request( 'GET', '/wp/v2/comments/13', array( 'id' => '12' ) ),
+            'note item, query id via ?rest_route spelling'   => $request( 'GET', '/wp/v2/comments/13', array( 'rest_route' => '/wp/v2/comments/13', 'id' => '12' ) ),
+            'note item, JSON body id (GET)'                  => $request( 'GET', '/wp/v2/comments/13', array(), array( 'id' => 12 ) ),
+            'note item, JSON body id (PUT)'                  => $request( 'PUT', '/wp/v2/comments/13', array(), array( 'id' => 12, 'content' => 'x' ) ),
+            'note item, POST body id'                        => $request( 'POST', '/wp/v2/comments/13', array(), array(), array( 'id' => '12', 'content' => 'x' ) ),
+            'note item, DELETE body id'                      => $request( 'DELETE', '/wp/v2/comments/13', array(), array(), array( 'id' => '12' ) ),
+            'note item, JSON id wins over a matching query id' => $request( 'GET', '/wp/v2/comments/13', array( 'id' => '13' ), array( 'id' => 12 ) ),
+            'note item, query id of an unknown comment'      => $request( 'GET', '/wp/v2/comments/13', array( 'id' => '999' ) ),
+            'note item, non-numeric id'                      => $request( 'GET', '/wp/v2/comments/13', array( 'id' => '13abc' ) ),
+            'note item, fractional id'                       => $request( 'GET', '/wp/v2/comments/13', array( 'id' => '13.5' ) ),
+            'note item, array id'                            => $request( 'GET', '/wp/v2/comments/13', array( 'id' => array( '13' ) ) ),
+            'note item, boolean id'                          => $request( 'GET', '/wp/v2/comments/13', array(), array( 'id' => true ) ),
+        ) as $label => $case
+    ) {
+        jpkcom_check( sprintf( '404: %s', $label ), $is_404( $gate[0][0]( null, null, $case ) ) );
+    }
+
+    foreach (
+        array(
+            'note item, query id equal to the route ID'      => $request( 'GET', '/wp/v2/comments/13', array( 'id' => '13' ) ),
+            'note item, JSON id equal to the route ID (PUT)' => $request( 'PUT', '/wp/v2/comments/13', array(), array( 'id' => 13, 'content' => 'x' ) ),
+            'note item, POST body id equal to the route ID'  => $request( 'POST', '/wp/v2/comments/13', array(), array(), array( 'id' => '13' ) ),
+            'note item, JSON id wins: equal, query id differs' => $request( 'GET', '/wp/v2/comments/13', array( 'id' => '12' ), array( 'id' => 13 ) ),
+            'GET note item, form-body id core does not read' => $request( 'GET', '/wp/v2/comments/13', array(), array(), array( 'id' => '12' ) ),
+        ) as $label => $case
+    ) {
+        jpkcom_check( sprintf( 'passes: %s', $label ), $gate[0][0]( null, null, $case ) === null );
+    }
 
     if ( function_exists( function: 'jpkcom_disable_comments_is_note_request' ) ) {
         jpkcom_check(
