@@ -2,7 +2,7 @@
 
 ## Plugin Overview
 
-Globally disables WordPress comment functionality: removes comment and trackback support from all post types, closes comments and pings, hides the admin Comments screen plus the menu and admin-bar entries, keeps the dashboard free of comment counts and moderation lists, 404s the comment feeds, removes the REST API comment endpoints and reports `comment_status`/`ping_status` as closed in REST responses.
+Globally disables WordPress comment functionality: removes comment and trackback support from all post types, closes comments and pings, hides the admin Comments screen plus the menu and admin-bar entries, keeps the dashboard free of comment counts and moderation lists, 404s the comment feeds, reports zero comments per post, answers the REST API comment endpoints with a 404 for everything except block-editor Notes, and reports `comment_status`/`ping_status` as closed in REST responses. Notes (comments of type `note`, WordPress 6.9+) keep working.
 
 - **Text Domain:** `jpkcom-disable-comments` (used by `esc_html__()` in the feed `wp_die()`; no header declared, defaults to slug)
 - **Min PHP:** 8.3 | **Min WP:** 6.9
@@ -19,18 +19,21 @@ Main file (jpkcom-disable-comments.php)
 ├── JPKCOM_DISABLE_COMMENTS_VERSION constant
 ├── init @ priority 5: boot JPKComGitPluginUpdater
 ├── jpkcom_disable_comments_close_rest_status()  ← named, function_exists-guarded
+├── jpkcom_disable_comments_is_note_request()   ← named, function_exists-guarded
+├── jpkcom_disable_comments_is_note_query()     ← named, function_exists-guarded
 ├── rest_api_init  → attach that filter to rest_prepare_<post_type> for all types
 ├── wp_loaded      → strip comments/trackbacks support from all post types
 ├── admin_init     → redirect edit-comments.php
 ├── comments_open / pings_open  → __return_false        (PHP_INT_MAX)
 ├── comments_array → __return_empty_array               (PHP_INT_MAX)
 ├── wp_count_comments   → zeroed count object           (PHP_INT_MAX)
-├── comments_pre_query  → [] / 0, short-circuits every comment query
+├── comments_pre_query  → [] / 0, short-circuits every non-note comment query
+├── get_comments_number → __return_zero                   (PHP_INT_MAX)
 ├── feed_links_show_comments_feed → __return_false
 ├── template_redirect  → 404 for is_comment_feed() (prio 0)
 ├── admin_menu     → remove_menu_page( 'edit-comments.php' )
 ├── admin_bar_menu → remove_node( 'comments' ) (prio 999)
-└── rest_endpoints → unset /wp/v2/comments routes
+└── rest_pre_dispatch → 404 rest_no_route for non-note requests on /wp/v2/comments* (PHP_INT_MAX, 3 args)
 ```
 
 ---
@@ -45,18 +48,26 @@ Main file (jpkcom-disable-comments.php)
 | `comments_open`, `pings_open` | filter (`PHP_INT_MAX`) | Force closed |
 | `comments_array` | filter (`PHP_INT_MAX`) | Always returns an empty array |
 | `wp_count_comments` | filter (`PHP_INT_MAX`) | Reports every bucket as zero |
-| `comments_pre_query` | filter (`PHP_INT_MAX`) | Short-circuits: `0` for counting queries, `[]` otherwise |
+| `comments_pre_query` | filter (`PHP_INT_MAX`, 2 args) | Short-circuits: `0` for counting queries, `[]` otherwise — except queries whose types are exactly `note`, which run untouched |
+| `get_comments_number` | filter (`PHP_INT_MAX`) | `__return_zero` |
 | `feed_links_show_comments_feed` | filter | Removes the comment feed discovery links |
 | `template_redirect` | action (prio 0) | 404 for `is_comment_feed()` |
 | `admin_menu` | action | Removes the Comments admin menu entry |
 | `admin_bar_menu` | action (prio 999) | Removes the Comments node from the admin bar |
-| `rest_endpoints` | filter | Removes `/wp/v2/comments` and `/wp/v2/comments/*` routes (iterated via `array_keys()`) |
+| `rest_pre_dispatch` | filter (`PHP_INT_MAX`, 3 args) | On `/wp/v2/comments` and everything below it (case-insensitive): a non-note request gets `rest_no_route` / 404 / core's message as a `WP_REST_Response`, overriding any earlier result; a note request gets the incoming value back |
+
+A **note request** is the collection route with `type` exactly `note` (GET and POST), or the item route `/wp/v2/comments/<id>` for an existing comment of type `note` (any method). Everything else — no `type`, `type=comment`/`pingback`/`all`, `NOTE`, `note,comment`, `type[]=note`, a regular, pingback or unknown ID, ID 0, sub-routes, `OPTIONS` — gets the 404. Core's own permission checks still decide who may read or write notes.
+
+**Deliberate, documented:**
+- **Query-string comment feeds** (`?feed=comments-rss2`, `?p=N&feed=rss2`) are answered with the 404 by the `template_redirect` guard at priority 0, before `redirect_canonical()` (priority 10) would 301 them to the pretty URL — which would 404 too. Owner decision 2026-10-20: keep.
+- **Route discovery:** the REST index at `/wp-json/` lists the comment routes again since 1.0.11. That is inherent to keeping them registered for Notes; every non-note request on them still gets the 404.
+- **`OPTIONS`** on the comment routes answers the 404 since 1.0.11. With the routes removed (≤ 1.0.10) core's OPTIONS handler (`rest_handle_options_request()`, `rest_pre_dispatch` priority 10) found no route and answered 200 with an empty body.
 
 ---
 
-## Four core details this plugin exists around
+## Core details this plugin exists around
 
-Each was measured against WordPress 7.0.2 for 1.0.9; the wrong assumption is noted so it is not reintroduced.
+The first four were measured against WordPress 7.0.2 for 1.0.9, the rest read against 7.1.3 for 1.0.11; the wrong assumption is noted so it is not reintroduced.
 
 **`comments_array` does not cover the feeds.** Comment feeds are assembled by `WP_Query` straight through `$wpdb` (`class-wp-query.php`, the `is_comment_feed` branches around lines 2815 and 3475) and only expose the `comment_feed_*` filters. Up to 1.0.8 `/comments/feed/` and `<post>/feed/` therefore kept serving approved comments — 200 with the comment text in the body — while the theme showed none. The feeds are now 404'd outright; `/feed/` is untouched because `is_comment_feed()` is false there.
 
@@ -65,6 +76,12 @@ Each was measured against WordPress 7.0.2 for 1.0.9; the wrong assumption is not
 **Support removal belongs on `wp_loaded`, not `admin_init`.** `wp-settings.php` fires `init` (771) then `wp_loaded` (793); `admin_init` and `rest_api_init` — the latter via `parse_request` — both come later. Bound to `admin_init` the removal never reached REST or front-end requests.
 
 **Removing support does not clean up the REST schema for `post`, `page` and `attachment`.** `WP_REST_Posts_Controller::get_item_schema()` holds a hardcoded `$fixed_schemas` list for those three in which `comments` is always present; the `post_type_supports()` check applies only to *other* post types (the `elseif` branch). So `comment_status`/`ping_status` stay in the schema and remain writable no matter what. `jpkcom_disable_comments_close_rest_status()` therefore rewrites the *response* to `closed`. The stored value is deliberately left alone — a REST write can still set `open`, but it is inert, because `comments_open` is filtered false and the response reports closed regardless.
+
+**Notes need the comment routes, not open comments.** Notes are comments of type `note`, created and read through `/wp/v2/comments` by logged-in users who can edit the post. Core lets them bypass `comments_open()` — `create_item_permissions_check()` returns for a note (7.1.3 `class-wp-rest-comments-controller.php:595`) before the `comments_open` check (`:633`) — and gates them on the post type's `editor` support with `notes` (`check_post_type_supports_notes()`, `:2173`), not on `comments` support. Up to 1.0.10 they broke only because `rest_endpoints` removed the routes and `comments_pre_query` emptied every query, note queries included. `WP_Comment_Query` leaves notes out of every query that does not request `all` or `note` (`class-wp-comment-query.php:782-789`), so passing note-only queries through exposes nothing else.
+
+**`rest_pre_dispatch` sees the request before routing.** `dispatch()` applies the filter (`class-wp-rest-server.php:1079`) and only then calls `match_request_to_handler()` (`:1096`), so URL parameters such as `id` are not set yet; a batch sub-request is even passed with them cleared (`:1860-1866`). The gate therefore parses `get_route()` itself, the way core matches it: `@^…$@i` — case-insensitive, and `$` also matches before a trailing newline, so `/wp/v2/comments\n` reaches the controller and has to be gated too. `get_comment()` of an empty ID falls back to the global `$comment`, hence the `id > 0` check. The error goes out as `rest_convert_error_to_response()`, not as a `WP_Error`: in a batch the pre-dispatch result is passed to `rest_post_dispatch` unconverted (`:1894`), where `rest_send_allow_header()` calls `get_matched_route()` on it — a fatal on `WP_Error`. The message uses core's string in the default text domain, so it is byte-identical to the missing-route answer in every locale.
+
+**Comment counts reach the feeds through `get_comments_number()`.** `/feed/` prints `<comments>`, `<wfw:commentRss>` and `<slash:comments>` when `get_comments_number() || comments_open()` (7.1.3 `feed-rss2.php:91`, `:112-114`), Atom the `replies` links and `<thr:total>` (`feed-atom.php:98-102`). With comments closed, a post with old approved comments kept all of them, pointing at comment feeds that answer 404. Filtering `get_comments_number` to `0` removes them and the themes' "N comments". Notes are unaffected — core excludes them from `comment_count` (`comment.php:3138`).
 
 ---
 
@@ -119,19 +136,20 @@ Triggered by **pushing a `v*` tag**; the workflow creates the GitHub release aut
 - `declare(strict_types=1)` in every PHP file
 - Typed closures throughout; `wp_safe_redirect()` for the admin redirect
 - Comment feeds return 404 rather than serving stored comments — the data path that mattered
+- The REST gate fails closed: anything on `/wp/v2/comments*` that is not provably a note request gets the 404; the note decision uses core's own strict `'note' ===` comparison and the stored `comment_type`
 - Updater: SHA256 verification + URL validation (audited separately)
 
 ---
 
 ## Tests
 
-`tests/test-hooks.php` runs standalone: it stubs the WordPress functions the main file touches at load time, requires the plugin, then invokes the recorded callbacks. It asserts the hook names and priorities plus the behaviour of `jpkcom_disable_comments_close_rest_status()`, the `wp_count_comments` and `comments_pre_query` callbacks, the support-removal loop (including a post type with `trackbacks` but no `comments`) and the `rest_endpoints` pruning. 30 cases; 13 of them fail against 1.0.8. CI runs it on every pull request and push to `main`.
+`tests/test-hooks.php` runs standalone: it stubs the WordPress functions the main file touches at load time, requires the plugin, then invokes the recorded callbacks. It asserts the hook names and priorities plus the behaviour of `jpkcom_disable_comments_close_rest_status()`, the `wp_count_comments` and `comments_pre_query` callbacks (including the note-only pass-through), the `get_comments_number` filter, the support-removal loop (including a post type with `trackbacks` but no `comments`) and the `rest_pre_dispatch` gate — note and non-note requests, the 404's exact shape, case, trailing-slash and trailing-newline spellings. 90 cases; 13 of the first 30 fail against 1.0.8; against 1.0.10, 10 fail and the 44 gate cases do not run (there is no gate). CI runs it on every pull request and push to `main`.
 
 ```bash
 php tests/test-hooks.php   # exit 0 = green
 ```
 
-The plugin is a pure set of hook registrations, so the suite covers the registration surface and the callback logic. What it cannot cover — that WordPress calls these hooks where expected — was verified by hand against a WordPress 7.0.2 instance.
+The plugin is a pure set of hook registrations, so the suite covers the registration surface and the callback logic. What it cannot cover — that WordPress calls these hooks where expected — was verified by hand against a WordPress 7.0.2 instance (1.0.9) and, for Notes and counts, against 7.1.3 (1.0.11).
 
 ---
 

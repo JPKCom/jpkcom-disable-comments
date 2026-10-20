@@ -3,7 +3,7 @@
 Plugin Name: JPKCom Disable Comments
 Plugin URI: https://github.com/JPKCom/jpkcom-disable-comments
 Description: Globally disable comments functionality.
-Version: 1.0.10
+Version: 1.0.11
 Author: Jean Pierre Kolb <jpk@jpkc.com>
 Author URI: https://www.jpkc.com
 Contributors: JPKCom
@@ -11,7 +11,7 @@ Tags: Comments, Plugin
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 8.3
-Stable tag: 1.0.10
+Stable tag: 1.0.11
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Update URI: https://github.com/JPKCom/jpkcom-disable-comments
@@ -30,7 +30,7 @@ if ( ! defined( constant_name: 'WPINC' ) ) {
  * @since 1.0.2
  */
 if ( ! defined( 'JPKCOM_DISABLE_COMMENTS_VERSION' ) ) {
-    define( 'JPKCOM_DISABLE_COMMENTS_VERSION', '1.0.10' );
+    define( 'JPKCOM_DISABLE_COMMENTS_VERSION', '1.0.11' );
 }
 
 
@@ -103,6 +103,91 @@ if ( ! function_exists( function: 'jpkcom_disable_comments_close_rest_status' ) 
         $response->set_data( $data );
 
         return $response;
+    }
+}
+
+if ( ! function_exists( function: 'jpkcom_disable_comments_is_note_request' ) ) {
+    /**
+     * Whether a REST request on the comment routes is a block-editor Notes request.
+     *
+     * Notes (core since 6.9) are comments of type `note`, created and read
+     * through `/wp/v2/comments`. A request counts as a note request when
+     *
+     * - it targets the collection route and its `type` parameter is exactly
+     *   `note` - the same strict comparison core's controller makes
+     *   (`'note' === $request['type']`), for GET and POST alike;
+     * - it targets the item route `/wp/v2/comments/<id>` and that comment exists
+     *   and is of type `note` (any method; core refuses to change a comment's
+     *   type on update).
+     *
+     * The route is read from `get_route()` and matched the way core matches it:
+     * case-insensitively, against the same `[\d]+` item pattern, and with `$`
+     * accepting a trailing newline as core's `@^…$@i` does. A trailing slash is
+     * tolerated as well. The ID is taken from the route because the URL
+     * parameters are not populated yet on `rest_pre_dispatch`: `dispatch()`
+     * matches the route only after the filter, and a batch sub-request is passed
+     * with its URL parameters cleared.
+     *
+     * Core's own permission checks still decide who may read or write notes.
+     *
+     * @since 1.0.11
+     *
+     * @param WP_REST_Request $request The request about to be dispatched.
+     * @return bool True for a note request, false for anything else.
+     */
+    function jpkcom_disable_comments_is_note_request( WP_REST_Request $request ): bool {
+        $route = (string) $request->get_route();
+
+        if ( 1 === preg_match( '#^/wp/v2/comments/?$#i', $route ) ) {
+            return 'note' === $request->get_param( 'type' );
+        }
+
+        if ( 1 !== preg_match( '#^/wp/v2/comments/([\d]+)/?$#i', $route, $matches ) ) {
+            return false;
+        }
+
+        $comment_id = (int) $matches[1];
+
+        // get_comment() of an empty ID falls back to the global $comment.
+        if ( $comment_id <= 0 ) {
+            return false;
+        }
+
+        $comment = get_comment( $comment_id );
+
+        return $comment instanceof WP_Comment && 'note' === $comment->comment_type;
+    }
+}
+
+if ( ! function_exists( function: 'jpkcom_disable_comments_is_note_query' ) ) {
+    /**
+     * Whether a comment query asks for notes and nothing else.
+     *
+     * Mirrors how `WP_Comment_Query::get_comment_ids()` reads the requested
+     * types: `type` and `type__in` are merged, and an empty string means "all
+     * types". The query counts as a note query only when, after dropping those
+     * empty entries, exactly `note` remains. `all`, `comment`, an empty type, a
+     * mix such as `[ 'note', 'comment' ]` or a spelling core would not treat as a
+     * note (`NOTE`, `note,comment`) do not qualify.
+     *
+     * @since 1.0.11
+     *
+     * @param WP_Comment_Query $query The query about to run.
+     * @return bool True when only notes are requested.
+     */
+    function jpkcom_disable_comments_is_note_query( WP_Comment_Query $query ): bool {
+        $types = array_merge(
+            (array) ( $query->query_vars['type'] ?? '' ),
+            (array) ( $query->query_vars['type__in'] ?? '' )
+        );
+
+        $types = array_values(
+            array_unique(
+                array_filter( $types, static fn ( mixed $type ): bool => '' !== $type )
+            )
+        );
+
+        return array( 'note' ) === $types;
     }
 }
 
@@ -217,15 +302,42 @@ add_filter( 'wp_count_comments', static function ( $counts, $post_id ): object {
  * Returns `0` for counting queries and an empty array otherwise, which is what
  * `WP_Comment_Query` expects from this filter.
  *
+ * Queries for block-editor Notes and nothing else pass through untouched (see
+ * `jpkcom_disable_comments_is_note_query()`), so the Notes panel can list notes
+ * and core gets the real note count. Notes are not public: core excludes them
+ * from every query that does not ask for them, and from `comment_count`.
+ *
  * @since 1.0.9
+ * @since 1.0.11 Note-only queries pass through.
  *
  * @param array|int|null   $comment_data Short-circuit value, null by default.
  * @param WP_Comment_Query $query        The query instance.
- * @return array|int Empty result set.
+ * @return array|int|null Empty result set, or the incoming value for a note query.
  */
 add_filter( 'comments_pre_query', static function ( $comment_data, WP_Comment_Query $query ) {
+    if ( jpkcom_disable_comments_is_note_query( $query ) ) {
+        return $comment_data;
+    }
+
     return empty( $query->query_vars['count'] ) ? array() : 0;
 }, PHP_INT_MAX, 2 );
+
+/**
+ * Report zero comments for every post.
+ *
+ * The feeds print their comment elements only when `get_comments_number() ||
+ * comments_open()` (7.1.3 `feed-rss2.php:91`, `:112-114`; `feed-atom.php:98-102`),
+ * so with comments closed a post that still has old approved comments kept
+ * `<comments>`, `<wfw:commentRss>` and `<slash:comments>` in `/feed/` and the
+ * `replies` links plus `<thr:total>` in the Atom feed - pointing at comment feeds
+ * that answer 404. Themes likewise kept printing "N comments".
+ *
+ * Notes are unaffected: core leaves them out of `comment_count`
+ * (`wp_update_comment_count_now()`, `comment.php:3138`).
+ *
+ * @since 1.0.11
+ */
+add_filter( 'get_comments_number', '__return_zero', PHP_INT_MAX );
 
 /**
  * Drop the comment feeds.
@@ -279,24 +391,62 @@ add_action( 'admin_bar_menu', static function ( WP_Admin_Bar $wp_admin_bar ): vo
 }, 999 );
 
 /**
- * Remove the REST API comment endpoints.
+ * Close the REST comment routes to everything except block-editor Notes.
+ *
+ * Up to 1.0.10 the `/wp/v2/comments` routes were removed on `rest_endpoints`.
+ * That also broke Notes, which core reads and writes through exactly those
+ * routes. The routes now stay registered, and this gate answers every request
+ * on them that is not a note request (see
+ * `jpkcom_disable_comments_is_note_request()`) the way a missing route is
+ * answered: `rest_no_route`, core's own message (default text domain, so the
+ * translation is core's too) and status 404.
+ *
+ * A request is on the comment routes when its route is `/wp/v2/comments` or
+ * lies below `/wp/v2/comments/`, compared case-insensitively as core does;
+ * `?rest_route=` requests arrive with the same route. `/wp/v2/commentsfoo` and
+ * other namespaces are not touched.
+ *
+ * PHP_INT_MAX, and a non-note request is answered even when an earlier filter
+ * already produced a result - that includes core's OPTIONS handler at priority
+ * 10, which would otherwise describe the route. For a note request the
+ * incoming value is returned unchanged.
+ *
+ * The error is returned as a response, not as a `WP_Error`: in a batch request
+ * core passes a `rest_pre_dispatch` result straight on to `rest_post_dispatch`,
+ * where `rest_send_allow_header()` calls `get_matched_route()` on it, which a
+ * `WP_Error` does not have. In a single request `dispatch()` returns the
+ * response as is - the same bytes as core's own missing-route answer.
+ *
+ * Side effect: the route index at `/wp-json/` lists the comment routes again;
+ * that is inherent to keeping them for Notes.
  *
  * @since 1.0.0
+ * @since 1.0.11 Replaces the rest_endpoints removal; Notes requests pass.
  *
- * @param array $endpoints The registered REST API endpoints.
- * @return array The endpoints without comment routes.
+ * @param mixed                 $result  Response from an earlier filter, null by default.
+ * @param WP_REST_Server|mixed  $server  Server instance.
+ * @param WP_REST_Request|mixed $request The request about to be dispatched.
+ * @return mixed The incoming value, or the 404 response.
  */
-add_filter( 'rest_endpoints', static function ( array $endpoints ): array {
-
-    if ( isset( $endpoints['/wp/v2/comments'] ) ) {
-        unset( $endpoints['/wp/v2/comments'] );
+add_filter( 'rest_pre_dispatch', static function ( $result, $server, $request ) {
+    if ( ! $request instanceof WP_REST_Request ) {
+        return $result;
     }
 
-    foreach ( array_keys( $endpoints ) as $route ) {
-        if ( str_starts_with( haystack: $route, needle: '/wp/v2/comments/' ) ) {
-            unset( $endpoints[ $route ] );
-        }
+    if ( 1 !== preg_match( '#^/wp/v2/comments(?:/|$)#i', (string) $request->get_route() ) ) {
+        return $result;
     }
 
-    return $endpoints;
-} );
+    if ( jpkcom_disable_comments_is_note_request( $request ) ) {
+        return $result;
+    }
+
+    return rest_convert_error_to_response(
+        new WP_Error(
+            'rest_no_route',
+            // phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- core's own string and domain, so the answer matches core's missing-route answer in every locale.
+            __( 'No route was found matching the URL and request method.' ),
+            array( 'status' => 404 )
+        )
+    );
+}, PHP_INT_MAX, 3 );
