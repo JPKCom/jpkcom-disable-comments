@@ -6,10 +6,28 @@ menu entry and admin-bar node are gone. Beyond that, the plugin closes
 the routes through which comments otherwise remain visible or reachable:
 the dashboard shows no comment count and no moderation list, the comment
 feeds (<code>/comments/feed/</code> and <code>&lt;post&gt;/feed/</code>)
-return 404 instead of serving stored comments, the REST comment
-endpoints are removed, and REST post responses report
+return 404 instead of serving stored comments, every post reports zero
+comments (so <code>/feed/</code> and the Atom feed carry no comment
+links or counts and themes print no “N comments”), the REST comment
+endpoints answer 404, and REST post responses report
 <code>comment_status</code> and <code>ping_status</code> as
 <code>closed</code>.</p>
+<p>Block-editor Notes keep working. Notes (WordPress 6.9+) are stored as
+comments of type <code>note</code> and travel through the same REST
+routes, so the routes stay registered: a request for notes — the
+collection with <code>type=note</code>, or an existing note by its ID —
+is handed to WordPress, whose own permission checks decide who may read
+or write them; every other request on those routes gets the same
+<code>rest_no_route</code> 404 a missing route returns, including a
+note’s route whose <code>id</code> parameter names a different comment
+(<code>/wp/v2/comments/&lt;note ID&gt;?id=&lt;comment ID&gt;</code>, or
+that <code>id</code> in the request body, which WordPress would load
+instead). Because the routes stay registered, the REST index at
+<code>/wp-json/</code> lists them.</p>
+<p>Query-string spellings of the comment feeds
+(<code>?feed=comments-rss2</code>, <code>?p=123&amp;feed=rss2</code>)
+are answered with the 404 directly rather than with WordPress’ canonical
+redirect to a pretty URL that would 404 as well. This is deliberate.</p>
 <p>Existing comments are not deleted — they stay in the database, out of
 reach of the front end, the feeds and the REST API. Deactivating the
 plugin makes them visible again.</p>

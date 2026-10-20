@@ -81,6 +81,16 @@ Search.appendIndex(
             "summary": "Report\u0020comments\u0020and\u0020pings\u0020as\u0020closed\u0020in\u0020a\u0020REST\u0020post\u0020response.",
             "url": "namespaces/default.html#function_jpkcom_disable_comments_close_rest_status"
         },                {
+            "fqsen": "\\jpkcom_disable_comments_is_note_request\u0028\u0029",
+            "name": "jpkcom_disable_comments_is_note_request",
+            "summary": "Whether\u0020a\u0020REST\u0020request\u0020on\u0020the\u0020comment\u0020routes\u0020is\u0020a\u0020block\u002Deditor\u0020Notes\u0020request.",
+            "url": "namespaces/default.html#function_jpkcom_disable_comments_is_note_request"
+        },                {
+            "fqsen": "\\jpkcom_disable_comments_is_note_query\u0028\u0029",
+            "name": "jpkcom_disable_comments_is_note_query",
+            "summary": "Whether\u0020a\u0020comment\u0020query\u0020asks\u0020for\u0020notes\u0020and\u0020nothing\u0020else.",
+            "url": "namespaces/default.html#function_jpkcom_disable_comments_is_note_query"
+        },                {
             "fqsen": "\\",
             "name": "\\",
             "summary": "",

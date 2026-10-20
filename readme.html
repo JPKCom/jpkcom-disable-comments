@@ -4,7 +4,7 @@
 https://github.com/JPKCom/jpkcom-disable-comments<br />
 <strong>Description:</strong> Globally disable comments
 functionality.<br />
-<strong>Version:</strong> 1.0.10<br />
+<strong>Version:</strong> 1.0.11<br />
 <strong>Author:</strong> Jean Pierre Kolb <a href="mailto:jpk@jpkc.com"
 class="email">jpk@jpkc.com</a><br />
 <strong>Author URI:</strong> https://www.jpkc.com<br />
@@ -13,7 +13,7 @@ class="email">jpk@jpkc.com</a><br />
 <strong>Requires at least:</strong> 6.9<br />
 <strong>Tested up to:</strong> 7.1<br />
 <strong>Requires PHP:</strong> 8.3<br />
-<strong>Stable tag:</strong> 1.0.10<br />
+<strong>Stable tag:</strong> 1.0.11<br />
 <strong>License:</strong> GPL-2.0-or-later<br />
 <strong>License URI:</strong>
 https://www.gnu.org/licenses/gpl-2.0.html<br />
@@ -29,10 +29,28 @@ menu entry and admin-bar node are gone. Beyond that, the plugin closes
 the routes through which comments otherwise remain visible or reachable:
 the dashboard shows no comment count and no moderation list, the comment
 feeds (<code>/comments/feed/</code> and <code>&lt;post&gt;/feed/</code>)
-return 404 instead of serving stored comments, the REST comment
-endpoints are removed, and REST post responses report
+return 404 instead of serving stored comments, every post reports zero
+comments (so <code>/feed/</code> and the Atom feed carry no comment
+links or counts and themes print no “N comments”), the REST comment
+endpoints answer 404, and REST post responses report
 <code>comment_status</code> and <code>ping_status</code> as
 <code>closed</code>.</p>
+<p>Block-editor Notes keep working. Notes (WordPress 6.9+) are stored as
+comments of type <code>note</code> and travel through the same REST
+routes, so the routes stay registered: a request for notes — the
+collection with <code>type=note</code>, or an existing note by its ID —
+is handed to WordPress, whose own permission checks decide who may read
+or write them; every other request on those routes gets the same
+<code>rest_no_route</code> 404 a missing route returns, including a
+note’s route whose <code>id</code> parameter names a different comment
+(<code>/wp/v2/comments/&lt;note ID&gt;?id=&lt;comment ID&gt;</code>, or
+that <code>id</code> in the request body, which WordPress would load
+instead). Because the routes stay registered, the REST index at
+<code>/wp-json/</code> lists them.</p>
+<p>Query-string spellings of the comment feeds
+(<code>?feed=comments-rss2</code>, <code>?p=123&amp;feed=rss2</code>)
+are answered with the 404 directly rather than with WordPress’ canonical
+redirect to a pretty URL that would 404 as well. This is deliberate.</p>
 <p>Existing comments are not deleted — they stay in the database, out of
 reach of the front end, the feeds and the REST API. Deactivating the
 plugin makes them visible again.</p>
@@ -49,7 +67,48 @@ file. Click ‘Install Now’.</li>
 <li>Click ‘Activate’ to use the plugin right away.</li>
 </ol>
 <h2 id="changelog">Changelog</h2>
-<h3 id="section">1.0.10</h3>
+<h3 id="section">1.0.11</h3>
+<ul>
+<li>Fixed: block-editor Notes stopped working with this plugin active.
+Notes are comments of type <code>note</code>, read and written through
+<code>/wp/v2/comments</code>, and both the removal of those routes and
+the short-circuit of every comment query took them down. The routes now
+stay registered and a <code>rest_pre_dispatch</code> gate answers every
+request that is not a note request — no <code>type</code>,
+<code>type=comment</code> or any other type, a regular or unknown
+comment ID — exactly as a missing route does
+(<code>rest_no_route</code>, 404, WordPress’ own message). Note requests
+reach WordPress, whose permission checks are unchanged, and comment
+queries asking for notes alone are no longer short-circuited. Public
+comments, pings, the comment feeds, the dashboard and the admin screens
+stay disabled</li>
+<li>Security: with the comment routes registered again for Notes, the
+gate checks the comment WordPress will actually load, not just the ID in
+the URL. WordPress’ comment endpoint takes the ID from an
+<code>id</code> parameter in the query string or the request body before
+the one in the URL, so a request on a note’s route whose <code>id</code>
+parameter names a different comment
+(<code>/wp/v2/comments/&lt;note ID&gt;?id=&lt;comment ID&gt;</code>)
+gets the 404 as well. A regular comment cannot be read, changed or
+deleted through a note’s route</li>
+<li>Changed: every post now reports zero comments
+(<code>get_comments_number</code>). A post with old approved comments
+kept <code>&lt;comments&gt;</code>, <code>&lt;wfw:commentRss&gt;</code>
+and <code>&lt;slash:comments&gt;</code> in <code>/feed/</code>, the
+<code>replies</code> links and <code>&lt;thr:total&gt;</code> in the
+Atom feed — pointing at comment feeds that answer 404 — and themes kept
+printing “N comments”. Notes are not part of that count</li>
+<li>Changed: the REST index at <code>/wp-json/</code> lists the comment
+routes again, a side effect of keeping them for Notes; every non-note
+request on them still answers 404. An <code>OPTIONS</code> request on
+them now answers that 404 too, where the removed route used to yield an
+empty 200</li>
+<li>Docs: the query-string comment feeds
+(<code>?feed=comments-rss2</code>, <code>?p=123&amp;feed=rss2</code>)
+answering 404 directly instead of WordPress’ canonical redirect is
+documented as deliberate</li>
+</ul>
+<h3 id="section-1">1.0.10</h3>
 <ul>
 <li>Security: the plugin header now carries
 <code>Update URI: https://github.com/JPKCom/jpkcom-disable-comments</code>.
@@ -68,7 +127,7 @@ GitHub release and verifies its SHA-256 before running it, instead of
 executing whatever phpdoc.org serves that day. No effect on the shipped
 plugin</li>
 </ul>
-<h3 id="section-1">1.0.9</h3>
+<h3 id="section-2">1.0.9</h3>
 <ul>
 <li>Fixed: existing comments were still publicly readable through the
 comment feeds. <code>/comments/feed/</code> and
@@ -112,7 +171,7 @@ re-open them</li>
 the new callbacks; CI runs it on every pull request and push to
 <code>main</code></li>
 </ul>
-<h3 id="section-2">1.0.8</h3>
+<h3 id="section-3">1.0.8</h3>
 <ul>
 <li>Fixed: the update manifest no longer reports
 <code>network: true</code> for this plugin. The generator defaulted a
@@ -128,7 +187,7 @@ repository are now English throughout, and the developer notes in
 <code>CLAUDE.md</code> were translated and trimmed. No effect on the
 shipped plugin</li>
 </ul>
-<h3 id="section-3">1.0.7</h3>
+<h3 id="section-4">1.0.7</h3>
 <ul>
 <li>Changed: <code>Tested up to</code> raised to WordPress 7.1</li>
 <li>Changed: the bundled updater’s runtime floor now matches the
@@ -140,7 +199,7 @@ and <code>tested</code> now say 6.9 and 7.1. They only apply when the
 README metadata cannot be read, but a stale fallback would have
 published a minimum the plugin no longer supports</li>
 </ul>
-<h3 id="section-4">1.0.6</h3>
+<h3 id="section-5">1.0.6</h3>
 <ul>
 <li>Added: plugin banners (<code>assets/banner-1544x500.avif</code>,
 <code>assets/banner-772x250.avif</code>) — a plain <code>#3c4955</code>
@@ -148,7 +207,7 @@ surface with no lettering. The update manifest already advertised these
 two URLs, but nothing was published under them, so the plugin card in
 wp-admin had a broken banner</li>
 </ul>
-<h3 id="section-5">1.0.5</h3>
+<h3 id="section-6">1.0.5</h3>
 <ul>
 <li>CI: the release step no longer copies the staging directory into
 itself, so the ZIP has no empty
@@ -162,7 +221,7 @@ to full commit SHAs</li>
 <li>CI: security and regression tests now run on every pull request,
 where a plugin has them</li>
 </ul>
-<h3 id="section-6">1.0.4</h3>
+<h3 id="section-7">1.0.4</h3>
 <ul>
 <li>Security: update packages are now verified <em>before</em>
 installation — the verified file is handed to WordPress instead of being
@@ -187,11 +246,11 @@ instead of being retried on every admin request</li>
 <li>Added: CI workflow on every pull request (PHP lint, named-argument
 check, YAML validation, action-pinning guard)</li>
 </ul>
-<h3 id="section-7">1.0.3</h3>
+<h3 id="section-8">1.0.3</h3>
 <ul>
 <li>Docs: linked the published PHPDoc API documentation</li>
 </ul>
-<h3 id="section-8">1.0.2</h3>
+<h3 id="section-9">1.0.2</h3>
 <ul>
 <li>Added secure self-hosted plugin updates via GitHub with SHA256
 checksum verification</li>
@@ -206,11 +265,11 @@ gh-pages on release</li>
 <li>Hardening: enabled <code>declare(strict_types=1)</code> and tidied
 the REST endpoint loop</li>
 </ul>
-<h3 id="section-9">1.0.1</h3>
+<h3 id="section-10">1.0.1</h3>
 <ul>
 <li>Removed REST API endpoint for comments</li>
 </ul>
-<h3 id="section-10">1.0.0</h3>
+<h3 id="section-11">1.0.0</h3>
 <ul>
 <li>Initial Release</li>
 </ul>

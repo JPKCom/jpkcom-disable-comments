@@ -120,7 +120,7 @@
             <dt class="phpdocumentor-table-of-contents__entry -constant -public">
     <a class="" href="namespaces/default.html#constant_JPKCOM_DISABLE_COMMENTS_VERSION">JPKCOM_DISABLE_COMMENTS_VERSION</a>
     <span>
-        &nbsp;: mixed&nbsp;= &#039;1.0.10&#039;                            </span>
+        &nbsp;: mixed&nbsp;= &#039;1.0.11&#039;                            </span>
 </dt>
 
     </dl>
@@ -140,6 +140,20 @@
                                 &nbsp;: mixed    </span>
 </dt>
 <dd>Report comments and pings as closed in a REST post response.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -function -">
+    <a class="" href="namespaces/default.html#function_jpkcom_disable_comments_is_note_request">jpkcom_disable_comments_is_note_request()</a>
+    <span>
+                                &nbsp;: bool    </span>
+</dt>
+<dd>Whether a REST request on the comment routes is a block-editor Notes request.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -function -">
+    <a class="" href="namespaces/default.html#function_jpkcom_disable_comments_is_note_query">jpkcom_disable_comments_is_note_query()</a>
+    <span>
+                                &nbsp;: bool    </span>
+</dt>
+<dd>Whether a comment query asks for notes and nothing else.</dd>
 
     </dl>
 
@@ -170,7 +184,7 @@
     <span class="phpdocumentor-signature__visibility">public</span>
         <span class="phpdocumentor-signature__type">mixed</span>
     <span class="phpdocumentor-signature__name">JPKCOM_DISABLE_COMMENTS_VERSION</span>
-    = <span class="phpdocumentor-signature__default-value">&#039;1.0.10&#039;</span>
+    = <span class="phpdocumentor-signature__default-value">&#039;1.0.11&#039;</span>
 </code>
 
 
@@ -261,6 +275,159 @@ and this filter reports the field as closed regardless.</p>
             </section>
 
 </article>
+                    <article class="phpdocumentor-element -function - ">
+    <h4 class="phpdocumentor-element__name" id="function_jpkcom_disable_comments_is_note_request">
+        jpkcom_disable_comments_is_note_request()
+        <a href="namespaces/default.html#function_jpkcom_disable_comments_is_note_request" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="jpkcom-disable-comments.php"><a href="files/jpkcom-disable-comments.html">jpkcom-disable-comments.php</a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">146</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Whether a REST request on the comment routes is a block-editor Notes request.</p>
+
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility"></span>
+                    <span class="phpdocumentor-signature__name">jpkcom_disable_comments_is_note_request</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__type"><abbr title="\WP_REST_Request">WP_REST_Request</abbr>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$request</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">bool</span></code>
+
+        <section class="phpdocumentor-description"><p>Notes (core since 6.9) are comments of type <code class="prettyprint">note</code>, created and read
+through <code class="prettyprint">/wp/v2/comments</code>. A request counts as a note request when</p>
+<ul>
+<li>it targets the collection route and its <code class="prettyprint">type</code> parameter is exactly
+<code class="prettyprint">note</code> - the same strict comparison core's controller makes
+(<code class="prettyprint">'note' === $request['type']</code>), for GET and POST alike;</li>
+<li>it targets the item route <code class="prettyprint">/wp/v2/comments/&lt;id&gt;</code> and that comment exists
+and is of type <code class="prettyprint">note</code> (any method; core refuses to change a comment's
+type on update).</li>
+</ul>
+<p>The route is read from <code class="prettyprint">get_route()</code> and matched the way core matches it:
+case-insensitively, against the same <code class="prettyprint">[\d]+</code> item pattern, and with <code class="prettyprint">$</code>
+accepting a trailing newline as core's <code class="prettyprint">@^…$@i</code> does. A trailing slash is
+tolerated as well. The ID is taken from the route because the URL
+parameters are not populated yet on <code class="prettyprint">rest_pre_dispatch</code>: <code class="prettyprint">dispatch()</code>
+matches the route only after the filter, and a batch sub-request is passed
+with its URL parameters cleared.</p>
+<p>The controller itself does not use the ID in the route: it reads
+<code class="prettyprint">$request['id']</code>, and <code class="prettyprint">get_param()</code> prefers the JSON body, the form body
+and the query string to the URL parameters. <code class="prettyprint">/wp/v2/comments/&lt;note&gt;?id=&lt;n&gt;</code>
+would therefore load comment <code class="prettyprint">&lt;n&gt;</code>. An item request with an <code class="prettyprint">id</code> parameter
+is a note request only when that parameter is numeric and equal to the ID
+in the route. Read here, before routing, <code class="prettyprint">get_param( 'id' )</code> returns exactly
+the value core will prefer later, since the URL parameters are still empty.</p>
+<p>Core's own permission checks still decide who may read or write notes.</p>
+</section>
+
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$request</span>
+                : <span class="phpdocumentor-argument-list__argument__type"><abbr title="\WP_REST_Request">WP_REST_Request</abbr></span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The request about to be dispatched.</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="function_jpkcom_disable_comments_is_note_request_tags">
+        Tags
+        <a href="namespaces/default.html#function_jpkcom_disable_comments_is_note_request_tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                    <dt class="phpdocumentor-tag-list__entry">
+                <span class="phpdocumentor-tag__name">since</span>
+            </dt>
+                            <dd class="phpdocumentor-tag-list__definition">
+                                            <span class="phpdocumentor-tag-link">1.0.11</span>
+                                                                                                        
+                                    </dd>
+                        </dl>
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">bool</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>True for a note request, false for anything else.</p>
+</section>
+
+            </section>
+
+</article>
+                    <article class="phpdocumentor-element -function - ">
+    <h4 class="phpdocumentor-element__name" id="function_jpkcom_disable_comments_is_note_query">
+        jpkcom_disable_comments_is_note_query()
+        <a href="namespaces/default.html#function_jpkcom_disable_comments_is_note_query" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="jpkcom-disable-comments.php"><a href="files/jpkcom-disable-comments.html">jpkcom-disable-comments.php</a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">193</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Whether a comment query asks for notes and nothing else.</p>
+
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility"></span>
+                    <span class="phpdocumentor-signature__name">jpkcom_disable_comments_is_note_query</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__type"><abbr title="\WP_Comment_Query">WP_Comment_Query</abbr>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$query</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">bool</span></code>
+
+        <section class="phpdocumentor-description"><p>Mirrors how <code class="prettyprint">WP_Comment_Query::get_comment_ids()</code> reads the requested
+types: <code class="prettyprint">type</code> and <code class="prettyprint">type__in</code> are merged, and an empty string means &quot;all
+types&quot;. The query counts as a note query only when, after dropping those
+empty entries, exactly <code class="prettyprint">note</code> remains. <code class="prettyprint">all</code>, <code class="prettyprint">comment</code>, an empty type, a
+mix such as <code class="prettyprint">[ 'note', 'comment' ]</code> or a spelling core would not treat as a
+note (<code class="prettyprint">NOTE</code>, <code class="prettyprint">note,comment</code>) do not qualify.</p>
+</section>
+
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$query</span>
+                : <span class="phpdocumentor-argument-list__argument__type"><abbr title="\WP_Comment_Query">WP_Comment_Query</abbr></span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The query about to run.</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="function_jpkcom_disable_comments_is_note_query_tags">
+        Tags
+        <a href="namespaces/default.html#function_jpkcom_disable_comments_is_note_query_tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                    <dt class="phpdocumentor-tag-list__entry">
+                <span class="phpdocumentor-tag__name">since</span>
+            </dt>
+                            <dd class="phpdocumentor-tag-list__definition">
+                                            <span class="phpdocumentor-tag-link">1.0.11</span>
+                                                                                                        
+                                    </dd>
+                        </dl>
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">bool</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>True when only notes are requested.</p>
+</section>
+
+            </section>
+
+</article>
             </section>
 
         
@@ -291,6 +458,8 @@ and this filter reports the field as closed regardless.</p>
                 <li>
                     <ul class="phpdocumentor-list -clean">
                                                     <li class=""><a href="namespaces/default.html#function_jpkcom_disable_comments_close_rest_status">jpkcom_disable_comments_close_rest_status()</a></li>
+                                                    <li class=""><a href="namespaces/default.html#function_jpkcom_disable_comments_is_note_query">jpkcom_disable_comments_is_note_query()</a></li>
+                                                    <li class=""><a href="namespaces/default.html#function_jpkcom_disable_comments_is_note_request">jpkcom_disable_comments_is_note_request()</a></li>
                                             </ul>
                 </li>
                     </ul>
