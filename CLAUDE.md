@@ -101,6 +101,9 @@ jpkcom-disable-comments/
 ├── includes/
 │   └── class-plugin-updater.php  ← GitHub auto-updater (namespace: JPKComDisableCommentsGitUpdate)
 ├── .github/workflows/release.yml ← Build ZIP, manifest, PHPDoc, deploy to gh-pages (on tag push)
+├── tests/
+│   ├── test-hooks.php            ← Standalone hook/callback suite
+│   └── test-claims.php           ← Re-measures the suite figures stated in CLAUDE.md
 ├── phpdoc.xml                    ← phpDocumentor config
 ├── README.md                     ← Public readme (source for the WP plugin modal)
 ├── CLAUDE.md                     ← This file
@@ -143,10 +146,13 @@ Triggered by **pushing a `v*` tag**; the workflow creates the GitHub release aut
 
 ## Tests
 
-`tests/test-hooks.php` runs standalone: it stubs the WordPress functions the main file touches at load time, requires the plugin, then invokes the recorded callbacks. It asserts the hook names and priorities plus the behaviour of `jpkcom_disable_comments_close_rest_status()`, the `wp_count_comments` and `comments_pre_query` callbacks (including the note-only pass-through), the `get_comments_number` filter, the support-removal loop (including a post type with `trackbacks` but no `comments`) and the `rest_pre_dispatch` gate — note and non-note requests, the 404's exact shape, case, trailing-slash and trailing-newline spellings. 90 cases. Measured with this suite: against 1.0.8, 22 cases run and 18 fail; against 1.0.10, 46 run and 10 fail. In both, the 44 gate-behaviour cases do not run, because no gate is registered. CI runs it on every pull request and push to `main`.
+`tests/test-hooks.php` runs standalone: it stubs the WordPress functions the main file touches at load time, requires the plugin, then invokes the recorded callbacks. It asserts the hook names and priorities plus the behaviour of `jpkcom_disable_comments_close_rest_status()`, the `wp_count_comments` and `comments_pre_query` callbacks (including the note-only pass-through), the `get_comments_number` filter, the support-removal loop (including a post type with `trackbacks` but no `comments`) and the `rest_pre_dispatch` gate — note and non-note requests, the 404's exact shape, case, trailing-slash and trailing-newline spellings. 90 cases. Measured with this suite against the released files: against 1.0.8, 22 of the 90 cases run and 18 fail; against 1.0.10, 46 of the 90 cases run and 10 fail. A case that exercises a hook or function the release does not register is skipped there and counts in neither figure: in both releases the 43 gate-behaviour cases (no `rest_pre_dispatch` gate) and the `get_comments_number` value, against 1.0.8 also the `wp_count_comments`, `comments_pre_query` and REST-rewrite behaviour.
+
+`tests/test-claims.php` keeps those figures true. It re-runs the suite (once as is, once with the `rest_pre_dispatch` registration dropped, and once against the files of each `v*` tag named above) and fails when a stated figure no longer matches, or when this section or the header of `tests/test-hooks.php` contains any other number (code, versions and the HTTP status 404 aside). The release comparisons need the tags; in CI's shallow checkout they are reported as skipped. CI runs both files on every pull request and push to `main`.
 
 ```bash
-php tests/test-hooks.php   # exit 0 = green
+php tests/test-hooks.php    # exit 0 = green
+php tests/test-claims.php   # the figures above still hold
 ```
 
 The plugin is a pure set of hook registrations, so the suite covers the registration surface and the callback logic. What it cannot cover — that WordPress calls these hooks where expected — was verified by hand against a WordPress 7.0.2 instance for 1.0.9. The 1.0.11 changes have **not yet been verified on a running site**: Notes being created, listed and resolved through the gate, the exact bytes of the 404, and `/feed/` without `<comments>` and `<slash:comments>`. So far they rest only on this suite and on reading the 7.1.3 source. Once it has been measured, replace these sentences with what was measured.
@@ -157,5 +163,5 @@ The plugin is a pure set of hook registrations, so the suite covers the registra
 
 1. Bump version in: header `Version:` + `Stable tag:`, `JPKCOM_DISABLE_COMMENTS_VERSION`, `README.md`, `phpdoc.xml`
 2. Add a `### x.y.z` block to `## Changelog` in `README.md`
-3. Run `php tests/test-hooks.php`
+3. Run `php tests/test-hooks.php` and `php tests/test-claims.php` (after adding cases, update the figures in **Tests**)
 4. Commit, tag `vx.y.z`, push the tag → the workflow builds and publishes everything

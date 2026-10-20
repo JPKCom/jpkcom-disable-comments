@@ -6,10 +6,10 @@
  * touches at load time are stubbed, the plugin file is required, and the
  * recorded callbacks are then invoked directly.
  *
- * Against 1.0.8, 18 of the 22 cases that run there fail. Against 1.0.10, the
- * Notes gate, note-query pass-through and comment-count cases fail (10 of 46).
- * In both versions the 44 gate-behaviour cases are skipped, because no gate
- * is registered.
+ * Against 1.0.10 the Notes gate, note-query pass-through and comment-count
+ * cases are red; against 1.0.8 nearly every registration case is red as well
+ * (support removal, priorities, dashboard, feeds, REST rewrite). The measured
+ * figures are in CLAUDE.md (Tests); tests/test-claims.php re-measures them.
  *
  * @package JPKCom_Disable_Comments
  * @since 1.0.9
