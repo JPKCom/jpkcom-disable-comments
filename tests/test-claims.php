@@ -12,9 +12,9 @@
  *                                                 rest_pre_dispatch gate is registered;
  * - "against X.Y.Z, R of the N cases run and F fail"
  *                                                 the suite run against the files of
- *                                                 tag vX.Y.Z (skipped when the tag is
- *                                                 not in the clone, e.g. a shallow CI
- *                                                 checkout).
+ *                                                 tag vX.Y.Z (skipped locally when the
+ *                                                 tag is not in the clone; a failure in
+ *                                                 CI, whose checkout fetches the tags).
  *
  * Any other number in those two places fails (code, version numbers and the
  * HTTP status 404 aside): a figure is either checked here or not written down.
@@ -30,6 +30,12 @@ $root = dirname( path: __DIR__ );
 $failed  = 0;
 $passed  = 0;
 $skipped = 0;
+
+/*
+ * In CI (GitHub Actions sets CI=true) a missing tag fails instead of being
+ * skipped: a skip there would leave the release figures unchecked everywhere.
+ */
+$in_ci = getenv( 'CI' ) === 'true';
 
 /**
  * Assert a condition and report it.
@@ -224,7 +230,11 @@ foreach ( $places as $place => $text ) {
             $measured = $measured_versions[ $version ];
 
             if ( $measured === false ) {
-                jpkcom_claims_skip( $name, sprintf( 'tag v%s is not in this clone', $version ) );
+                if ( $in_ci ) {
+                    jpkcom_claims_check( $name, false, sprintf( 'tag v%s is not in this clone; CI must check out the tags', $version ) );
+                } else {
+                    jpkcom_claims_skip( $name, sprintf( 'tag v%s is not in this clone', $version ) );
+                }
                 continue;
             }
 
@@ -249,6 +259,16 @@ foreach ( $places as $place => $text ) {
         $unchecked === 0 ? '' : 'unchecked: "' . implode( '", "', $left[0] ) . '"'
     );
 }
+
+/*
+ * The release comparisons need the tags. CI must check them out, otherwise the
+ * figures about earlier releases are never re-measured there.
+ */
+$ci_workflow = (string) file_get_contents( $root . '/.github/workflows/ci.yml' );
+jpkcom_claims_check(
+    'ci.yml: the checkout fetches the full history with its tags (fetch-depth: 0)',
+    preg_match( '/uses:\s*actions\/checkout@\S+[^\n]*\n\s+with:\s*\n(?:[ \t]+(?:#|[\w-]+:)[^\n]*\n)*?[ \t]+fetch-depth:\s*0\s*(?:#[^\n]*)?\n/', $ci_workflow ) === 1
+);
 
 jpkcom_claims_rmtree( $tmp );
 
