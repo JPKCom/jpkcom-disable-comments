@@ -6,9 +6,10 @@
  * touches at load time are stubbed, the plugin file is required, and the
  * recorded callbacks are then invoked directly.
  *
- * The cases up to the REST status rewrite are red against 1.0.8; the Notes
- * gate, the note-query pass-through and the comment-count cases are red
- * against 1.0.10.
+ * Against 1.0.8, 18 of the 22 cases that run there fail. Against 1.0.10, the
+ * Notes gate, note-query pass-through and comment-count cases fail (10 of 46).
+ * In both versions the 44 gate-behaviour cases are skipped, because no gate
+ * is registered.
  *
  * @package JPKCom_Disable_Comments
  * @since 1.0.9

@@ -67,7 +67,7 @@ A **note request** is the collection route with `type` exactly `note` (GET and P
 
 ## Core details this plugin exists around
 
-The first four were measured against WordPress 7.0.2 for 1.0.9, the rest read against 7.1.3 for 1.0.11; the wrong assumption is noted so it is not reintroduced.
+The first four were measured against a running WordPress 7.0.2 for 1.0.9. The other three were read in the WordPress 7.1.3 source for 1.0.11 and have not yet been measured on a running site. The wrong assumption is noted so it is not reintroduced.
 
 **`comments_array` does not cover the feeds.** Comment feeds are assembled by `WP_Query` straight through `$wpdb` (`class-wp-query.php`, the `is_comment_feed` branches around lines 2815 and 3475) and only expose the `comment_feed_*` filters. Up to 1.0.8 `/comments/feed/` and `<post>/feed/` therefore kept serving approved comments — 200 with the comment text in the body — while the theme showed none. The feeds are now 404'd outright; `/feed/` is untouched because `is_comment_feed()` is false there.
 
@@ -143,13 +143,13 @@ Triggered by **pushing a `v*` tag**; the workflow creates the GitHub release aut
 
 ## Tests
 
-`tests/test-hooks.php` runs standalone: it stubs the WordPress functions the main file touches at load time, requires the plugin, then invokes the recorded callbacks. It asserts the hook names and priorities plus the behaviour of `jpkcom_disable_comments_close_rest_status()`, the `wp_count_comments` and `comments_pre_query` callbacks (including the note-only pass-through), the `get_comments_number` filter, the support-removal loop (including a post type with `trackbacks` but no `comments`) and the `rest_pre_dispatch` gate — note and non-note requests, the 404's exact shape, case, trailing-slash and trailing-newline spellings. 90 cases; 13 of the first 30 fail against 1.0.8; against 1.0.10, 10 fail and the 44 gate cases do not run (there is no gate). CI runs it on every pull request and push to `main`.
+`tests/test-hooks.php` runs standalone: it stubs the WordPress functions the main file touches at load time, requires the plugin, then invokes the recorded callbacks. It asserts the hook names and priorities plus the behaviour of `jpkcom_disable_comments_close_rest_status()`, the `wp_count_comments` and `comments_pre_query` callbacks (including the note-only pass-through), the `get_comments_number` filter, the support-removal loop (including a post type with `trackbacks` but no `comments`) and the `rest_pre_dispatch` gate — note and non-note requests, the 404's exact shape, case, trailing-slash and trailing-newline spellings. 90 cases. Measured with this suite: against 1.0.8, 22 cases run and 18 fail; against 1.0.10, 46 run and 10 fail. In both, the 44 gate-behaviour cases do not run, because no gate is registered. CI runs it on every pull request and push to `main`.
 
 ```bash
 php tests/test-hooks.php   # exit 0 = green
 ```
 
-The plugin is a pure set of hook registrations, so the suite covers the registration surface and the callback logic. What it cannot cover — that WordPress calls these hooks where expected — was verified by hand against a WordPress 7.0.2 instance (1.0.9) and, for Notes and counts, against 7.1.3 (1.0.11).
+The plugin is a pure set of hook registrations, so the suite covers the registration surface and the callback logic. What it cannot cover — that WordPress calls these hooks where expected — was verified by hand against a WordPress 7.0.2 instance for 1.0.9. The 1.0.11 changes have **not yet been verified on a running site**: Notes being created, listed and resolved through the gate, the exact bytes of the 404, and `/feed/` without `<comments>` and `<slash:comments>`. So far they rest only on this suite and on reading the 7.1.3 source. Once it has been measured, replace these sentences with what was measured.
 
 ---
 
