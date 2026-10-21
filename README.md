@@ -3,7 +3,7 @@
 **Plugin Name:** JPKCom Disable Comments  
 **Plugin URI:** https://github.com/JPKCom/jpkcom-disable-comments  
 **Description:** Globally disable comments functionality.  
-**Version:** 1.0.11  
+**Version:** 1.0.12  
 **Author:** Jean Pierre Kolb <jpk@jpkc.com>  
 **Author URI:** https://www.jpkc.com  
 **Contributors:** JPKCom  
@@ -11,7 +11,7 @@
 **Requires at least:** 6.9  
 **Tested up to:** 7.1  
 **Requires PHP:** 8.3  
-**Stable tag:** 1.0.11  
+**Stable tag:** 1.0.12  
 **License:** GPL-2.0-or-later  
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html  
 **Update URI:** https://github.com/JPKCom/jpkcom-disable-comments
@@ -46,6 +46,9 @@ Existing comments are not deleted — they stay in the database, out of reach of
 
 
 ## Changelog
+
+### 1.0.12
+* Added: a plugin icon. The update manifest now points WordPress to the JPKCom logo, so the Updates screen (Dashboard → Updates) shows it next to this plugin instead of the generic pattern wordpress.org generates from the slug
 
 ### 1.0.11
 * Fixed: block-editor Notes stopped working with this plugin active. Notes are comments of type `note`, read and written through `/wp/v2/comments`, and both the removal of those routes and the short-circuit of every comment query took them down. The routes now stay registered and a `rest_pre_dispatch` gate answers every request that is not a note request — no `type`, `type=comment` or any other type, a regular or unknown comment ID — exactly as a missing route does (`rest_no_route`, 404, WordPress' own message). Note requests reach WordPress, whose permission checks are unchanged, and comment queries asking for notes alone are no longer short-circuited. Public comments, pings, the comment feeds, the dashboard and the admin screens stay disabled
